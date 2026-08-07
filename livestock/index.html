@@ -1,1 +1,531 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Livestock Planner — Manor Lords</title>
+<style>
+:root{
+  --bg:#081116; --panel:#0f191d; --panel2:#111d21; --line:#5f4b2b;
+  --gold:#d3a64e; --gold2:#f0d9a8; --text:#efe5cf; --muted:#c6b48f;
+  --green:#8db43e; --green2:#365c2b; --red:#8a3f31;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:#071015;color:var(--text);font-family:Georgia,"Times New Roman",serif}
+body{
+  min-height:100vh;
+  padding:18px;
+  background:
+    radial-gradient(circle at 70% 0%,rgba(150,111,51,.08),transparent 35%),
+    linear-gradient(180deg,#091218,#071015);
+}
+.app{max-width:1460px;margin:auto}
+.topbar{
+  display:grid;grid-template-columns:300px 1fr 170px;gap:20px;align-items:center;
+  margin-bottom:15px
+}
+.brand{display:flex;gap:14px;align-items:center}
+.brand-mark{
+  width:76px;height:76px;border:2px solid var(--gold);border-radius:50%;
+  display:grid;place-items:center;color:var(--gold);font-size:34px
+}
+.brand strong{display:block;font-size:28px;letter-spacing:.05em}
+.brand span{display:block;color:var(--gold);font-size:15px;letter-spacing:.14em;margin-top:3px}
+.title{text-align:center}
+.title h1{margin:0;font-size:58px;font-weight:500;letter-spacing:.03em}
+.title .rule{height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:8px auto;width:70%}
+.title p{margin:0;color:var(--muted);font-style:italic;font-size:18px}
+.home{
+  justify-self:end;text-decoration:none;color:var(--text);border:1px solid var(--line);
+  padding:11px 20px;border-radius:5px;background:linear-gradient(#151d1f,#0b1316)
+}
+.panel{
+  background:linear-gradient(180deg,rgba(20,31,35,.98),rgba(11,20,24,.98));
+  border:1px solid var(--line);border-radius:6px;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.015)
+}
+.controls{
+  display:grid;grid-template-columns:1.3fr 2.2fr 1.8fr;gap:12px;margin-bottom:12px
+}
+.control-panel{padding:17px 20px}
+.label{font-size:17px;letter-spacing:.03em;margin-bottom:10px}
+select,input[type=number]{
+  width:100%;background:#101719;color:var(--text);border:1px solid #685632;border-radius:5px;
+  padding:12px 14px;font:20px Georgia
+}
+.animal-row{display:grid;grid-template-columns:1fr;gap:8px}
+.meadow-row{display:grid;grid-template-columns:1fr 145px;gap:18px;align-items:center}
+input[type=range]{width:100%;accent-color:var(--green)}
+.big-percent{
+  font-size:43px;text-align:center;padding:7px;border:1px solid var(--line);
+  border-radius:5px;background:#0d1518
+}
+.help{margin-top:8px;color:var(--muted);font-style:italic;font-size:14px}
+.goal-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.goal-result{border-top:1px solid var(--line);margin-top:13px;padding-top:12px}
+.goal-result .needed{font-size:54px;color:var(--green);line-height:1}
+.goal-result .needed span{font-size:19px;color:var(--text)}
+.goal-note{color:var(--muted);font-style:italic;margin-top:8px;line-height:1.35}
 
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px}
+.metric{padding:16px;text-align:center;min-height:160px}
+.metric .m-label{font-size:15px;letter-spacing:.02em}
+.metric .icon{font-size:34px;margin:7px 0}
+.metric .m-value{font-size:42px}
+.metric .m-unit{color:var(--gold2);font-size:17px;margin-top:2px}
+.metric .m-note{color:var(--muted);font-size:14px;font-style:italic;margin-top:7px}
+
+.main-grid{display:grid;grid-template-columns:1.05fr 1fr;gap:12px}
+.section{padding:16px}
+.section h2{margin:0 0 12px;font-size:19px;font-weight:500;letter-spacing:.03em;border-bottom:1px solid var(--line);padding-bottom:8px}
+.subgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.subsection{padding-right:10px}
+.subsection + .subsection{border-left:1px solid var(--line);padding-left:16px;padding-right:0}
+.subsection h3{margin:0 0 8px;font-size:17px;font-weight:500}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{border:1px solid rgba(115,92,49,.45);padding:7px;text-align:center}
+th{font-weight:500;color:var(--text)}
+tr.selected{background:rgba(80,112,40,.32)}
+.green{color:var(--green);font-weight:700}
+.note{color:var(--muted);font-style:italic;font-size:13px;line-height:1.4;margin-top:9px}
+.summary-row{
+  display:grid;grid-template-columns:1fr 120px;gap:10px;padding:9px 10px;border-bottom:1px solid rgba(115,92,49,.45);
+  align-items:center
+}
+.summary-row:last-child{border-bottom:0}
+.summary-value{text-align:right;font-size:18px}
+.bottom{display:grid;grid-template-columns:1.25fr .9fr;gap:12px;margin-top:12px}
+.about{display:grid;grid-template-columns:1fr 1.35fr;gap:15px}
+.about ul{margin:0;padding-left:20px;color:var(--muted);line-height:1.55}
+.chance-table{display:grid;grid-template-columns:repeat(5,1fr);border:1px solid var(--line);margin-top:14px}
+.chance-table div{padding:9px;text-align:center;border-right:1px solid var(--line)}
+.chance-table div:last-child{border-right:0}
+.breed-grid{display:grid;grid-template-columns:1fr 1fr 1.2fr;gap:12px;align-items:center}
+.breed-item{text-align:center;padding:8px}
+.breed-item + .breed-item{border-left:1px solid var(--line)}
+.breed-big{font-size:34px;color:var(--green);margin:5px 0}
+footer{text-align:center;color:#8f8066;font-size:13px;padding:16px 0 3px}
+@media(max-width:1000px){
+  .topbar{grid-template-columns:1fr}.brand,.home{justify-self:center}.title h1{font-size:44px}
+  .controls,.metrics,.main-grid,.bottom{grid-template-columns:1fr 1fr}.goal{grid-column:span 2}
+}
+@media(max-width:700px){
+  body{padding:7px}.controls,.metrics,.main-grid,.bottom,.subgrid,.about,.breed-grid{grid-template-columns:1fr}
+  .goal{grid-column:auto}.subsection + .subsection{border-left:0;border-top:1px solid var(--line);padding:14px 0 0}
+}
+
+.strategy-box{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.strategy-options{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:7px}
+.strategy-options label{display:flex;align-items:center;gap:7px;padding:9px 10px;border:1px solid var(--line);border-radius:5px;background:#0d1518;cursor:pointer}
+.strategy-options input{accent-color:var(--green)}
+.econ-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.econ-card{border:1px solid rgba(115,92,49,.55);border-radius:5px;padding:11px 12px;background:rgba(255,255,255,.015)}
+.econ-label{color:var(--muted);font-size:13px;margin-bottom:4px}
+.econ-value{font-size:22px;color:var(--gold2)}
+.feed-planner{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.feed-input-row{display:grid;grid-template-columns:1fr 110px;gap:10px;align-items:center;margin-top:8px}
+.feed-input-row input{width:110px;padding:8px;font:700 18px Georgia}
+.feed-results{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.feed-result{padding:9px;border:1px solid rgba(115,92,49,.45);text-align:center}
+.feed-result strong{display:block;font-size:22px;color:var(--green);margin-top:3px}
+.strategy-compare{margin-top:11px;padding:10px 12px;border:1px solid rgba(115,92,49,.45);line-height:1.45;color:var(--muted)}
+@media(max-width:700px){.strategy-options,.econ-grid,.feed-results{grid-template-columns:1fr}}
+
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark">⚜</div>
+      <div><strong>MANOR LORDS</strong><span>COMMUNITY TOOLS</span></div>
+    </div>
+    <div class="title">
+      <h1>LIVESTOCK PLANNER</h1>
+      <div class="rule"></div>
+      <p>Plan your livestock operations and annual production</p>
+    </div>
+    <a class="home" href="../">⌂ &nbsp; HOME</a>
+  </div>
+
+  <section class="controls">
+    <div class="panel control-panel">
+      <div class="label">ANIMAL</div>
+      <div class="animal-row">
+        <select id="animal">
+          <option value="cow">🐄 Cow</option>
+          <option value="sheep">🐑 Sheep</option>
+        </select>
+      </div>
+      <div class="help">Select the livestock you want to plan for.</div>
+      <div class="strategy-box">
+        <div class="label" style="margin-bottom:6px">BUTCHERY STRATEGY</div>
+        <div class="strategy-options">
+          <label><input type="radio" name="strategy" value="young" checked> <span id="youngLabel">Butcher Calves</span></label>
+          <label><input type="radio" name="strategy" value="adult"> <span id="adultLabel">Raise to Adult</span></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel control-panel">
+      <div class="label">MEADOW PERCENTAGE</div>
+      <div class="meadow-row">
+        <input id="meadow" type="range" min="0" max="100" step="1" value="50">
+        <div id="meadowValue" class="big-percent">50%</div>
+      </div>
+      <div class="help">Higher meadow percentage = higher chance for bonus production.</div>
+    </div>
+
+    <div class="panel control-panel goal">
+      <div class="label">◎ &nbsp; GOAL PLANNER</div>
+      <div class="goal-grid">
+        <div>
+          <div class="help" style="margin:0 0 5px">Target resource</div>
+          <select id="resource"></select>
+        </div>
+        <div>
+          <div class="help" style="margin:0 0 5px">Target amount / year</div>
+          <input id="target" type="number" min="1" step="1" value="150">
+        </div>
+      </div>
+      <div class="goal-result">
+        <div>ANIMALS NEEDED</div>
+        <div id="animalsNeeded" class="needed">12 <span>Cows</span></div>
+        <div id="goalNote" class="goal-note"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="metrics">
+    <div class="panel metric">
+      <div class="m-label">ANNUAL PRODUCTION</div>
+      <div id="prodIcon" class="icon">🥛</div>
+      <div id="annualProd" class="m-value">13.50</div>
+      <div id="annualUnit" class="m-unit">Milk / year</div>
+      <div id="annualNote" class="m-note">At 50% meadow</div>
+    </div>
+    <div class="panel metric">
+      <div class="m-label">OFFSPRING / YEAR</div>
+      <div class="icon" id="offspringIcon">🐄</div>
+      <div id="offspring" class="m-value">0.37</div>
+      <div id="offspringUnit" class="m-unit">Calves / year</div>
+      <div class="m-note">Born in spring</div>
+    </div>
+    <div class="panel metric">
+      <div class="m-label">WINTER FEED</div>
+      <div class="icon">🌾</div>
+      <div id="feed" class="m-value">6</div>
+      <div class="m-unit">Feed / year</div>
+      <div id="feedNote" class="m-note">(3 oats) per cow</div>
+    </div>
+    <div class="panel metric">
+      <div class="m-label">IMPORT COST</div>
+      <div class="icon">🪙</div>
+      <div id="importCost" class="m-value">50 + 10</div>
+      <div class="m-unit">Regional Wealth</div>
+      <div class="m-note">Base + Livestock Trade</div>
+    </div>
+  </section>
+
+  <section class="main-grid">
+    <div class="panel section">
+      <h2>PRODUCTION DETAILS</h2>
+      <div class="subgrid">
+        <div class="subsection">
+          <h3 id="productionTitle">🥛 MILK PRODUCTION (Mar - Nov)</h3>
+          <table>
+            <thead><tr><th>Meadow %</th><th id="periodHeader">Milk / Month</th><th id="yearHeader">Milk / Year</th></tr></thead>
+            <tbody id="prodTable"></tbody>
+          </table>
+          <div id="formulaNote" class="note"></div>
+        </div>
+        <div class="subsection">
+          <h3>🔪 BUTCHERY OUTPUT <small>(per animal)</small></h3>
+          <table>
+            <thead><tr><th>Action</th><th id="meatHead">Beef</th><th>Hides</th></tr></thead>
+            <tbody id="butchery"></tbody>
+          </table>
+          <div id="butcheryNote" class="note"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel section">
+      <h2>🧺 ANNUAL OUTPUT SUMMARY <small>(per animal)</small></h2>
+      <div id="summary"></div>
+      <div id="summaryNote" class="note"></div>
+    </div>
+  </section>
+
+  <section class="bottom">
+    <div class="panel section">
+      <div class="about">
+        <div>
+          <h2 id="aboutTitle">ABOUT COWS</h2>
+          <ul id="aboutList"></ul>
+        </div>
+        <div>
+          <h2>⚖ &nbsp; LIVESTOCK ECONOMICS &amp; FEED</h2>
+          <div class="econ-grid">
+            <div class="econ-card"><div class="econ-label">IMPORT COST</div><div id="econImport" class="econ-value">50 + 10 RW</div></div>
+            <div class="econ-card"><div class="econ-label">WINTER FEED / ADULT</div><div id="econFeed" class="econ-value">6 Feed</div></div>
+            <div class="econ-card"><div class="econ-label">OATS / ADULT</div><div id="econOats" class="econ-value">3 Oats</div></div>
+            <div class="econ-card"><div class="econ-label">FEED CONVERSION</div><div class="econ-value">1 Oat = 2 Feed</div></div>
+          </div>
+          <div id="strategyCompare" class="strategy-compare"></div>
+          <div class="feed-planner">
+            <div class="label" style="margin-bottom:4px">WINTER FEED PLANNER</div>
+            <div class="feed-input-row">
+              <label for="herdSize">Number of adult animals:</label>
+              <input id="herdSize" type="number" min="1" step="1" value="10">
+            </div>
+            <div class="feed-results">
+              <div class="feed-result">Adults<strong id="adultCount">10</strong></div>
+              <div class="feed-result">Young Being Raised<strong id="youngCount">0</strong></div>
+              <div class="feed-result">Adult Feed<strong id="baseFeedTotal">60</strong></div>
+              <div class="feed-result">Young Feed<strong id="extraFeedTotal">0</strong></div>
+              <div class="feed-result">Total Feed<strong id="totalFeedTotal">60</strong></div>
+              <div class="feed-result">Total Oats<strong id="oatsTotal">30</strong></div>
+            </div>
+            <div id="feedPlannerNote" class="note"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel section">
+      <h2>♡ &nbsp; BREEDING INFORMATION</h2>
+      <div class="breed-grid">
+        <div class="breed-item">
+          <div>5% chance to breed<br>every 10 days<br>for 90 days</div>
+        </div>
+        <div class="breed-item">
+          <div>Chance of at least<br>one offspring:</div>
+          <div id="breedChance" class="breed-big">36.98%</div>
+          <div>Average offspring/year:<br><span id="offspringSmall">0.37</span></div>
+        </div>
+        <div class="breed-item" id="breedSeason">Offspring are born in spring.<br><br>Each animal can produce a maximum of one offspring per breeding season.</div>
+      </div>
+    </div>
+  </section>
+
+  <footer>All calculations based on the Manor Lords mechanics supplied for this planner. Values are averages. • Beta v8.097</footer>
+</div>
+
+<script>
+const animalEl=document.getElementById('animal');
+const meadowEl=document.getElementById('meadow');
+const meadowValue=document.getElementById('meadowValue');
+const resourceEl=document.getElementById('resource');
+const targetEl=document.getElementById('target');
+const herdSizeEl=document.getElementById('herdSize');
+function getStrategy(){return document.querySelector('input[name="strategy"]:checked').value;}
+
+const BREED_CHANCE = 1 - Math.pow(0.95,9);
+
+function cowMilk(m){ return 9 * (1 + m/100); }
+function sheepWool(m){ return 2 + m/100; }
+
+const DATA = {
+  cow:{
+    name:'Cow', plural:'Cows', youngName:'Calves',
+    primary:'Milk', primaryIcon:'🥛', primaryAnnual:cowMilk,
+    offspringName:'Calves', offspringIcon:'🐄',
+    feed:6, oats:3, youngFeed:3, importBase:50, maturityYears:2,
+    youngYield:{meat:2,hides:1}, adultYield:{meat:4,hides:2},
+    meat:'Beef',
+    periodTitle:'🥛 MILK PRODUCTION (Mar - Nov)', periodHeader:'Milk / Month', yearHeader:'Milk / Year',
+    productionRows:[0,25,50,75,100], period:m=>1+m/100, annual:m=>cowMilk(m),
+    formula:'Milk / Month = 1 base + (1 × meadow chance)<br>Milk / Year = Milk / Month × 9 months',
+    butchery:[['Butcher Calf','2','1'],['Butcher Cow','4','2']],
+    about:[
+      'Cows produce milk each month from March to November.',
+      '5% chance to breed every 10 days for 90 days in summer.',
+      'Calves give 2 Beef and 1 Hide; adult cows give 4 Beef and 2 Hides.',
+      'Calves take 2 years to mature into adult cows.',
+      '6 feed (3 oats) needed per winter per adult cow.',
+      'Import cost: 50 + 10 Regional Wealth.'
+    ],
+    breedingSeason:'summer'
+  },
+  sheep:{
+    name:'Sheep', plural:'Sheep', youngName:'Lambs',
+    primary:'Wool', primaryIcon:'🧶', primaryAnnual:sheepWool,
+    offspringName:'Lambs', offspringIcon:'🐑',
+    feed:3, oats:1.5, youngFeed:3, importBase:20, maturityYears:1,
+    youngYield:{meat:1,hides:0}, adultYield:{meat:2,hides:1},
+    meat:'Mutton',
+    periodTitle:'🧶 WOOL PRODUCTION', periodHeader:'Base Wool', yearHeader:'Avg Wool / Year',
+    productionRows:[0,25,50,75,100], period:m=>2, annual:m=>sheepWool(m),
+    formula:'Wool / Year = 2 base + (1 × meadow chance)',
+    butchery:[['Butcher Lamb','1','—'],['Butcher Sheep','2','1']],
+    about:[
+      'Sheep produce 2 base Wool per year with a chance for +1 from Meadow.',
+      '5% chance to breed every 10 days for 90 days in autumn.',
+      'Lambs give 1 Mutton; adult sheep give 2 Mutton and 1 Hide.',
+      'Lambs take 1 year to mature into adult sheep.',
+      '3 feed (1.5 oats) needed per winter per adult sheep.',
+      'Import cost: 20 + 10 Regional Wealth.'
+    ],
+    breedingSeason:'autumn'
+  }
+};
+
+function fmt(v,dec=2){ return Number(v).toFixed(dec); }
+
+function getResourceList(d){
+  const strategy=getStrategy();
+  const y=strategy==='adult'?d.adultYield:d.youngYield;
+  return [
+    {name:d.primary,icon:d.primaryIcon,annual:m=>d.primaryAnnual(m)},
+    {name:d.meat,icon:'🥩',annual:m=>BREED_CHANCE*y.meat},
+    {name:'Hides',icon:'🟫',annual:m=>BREED_CHANCE*y.hides}
+  ];
+}
+function refreshResources(d){
+  const old=resourceEl.value;
+  const resources=getResourceList(d);
+  resourceEl.innerHTML=resources.map(r=>`<option value="${r.name}">${r.icon} ${r.name}</option>`).join('');
+  if(resources.some(r=>r.name===old))resourceEl.value=old;
+}
+
+function render(){
+  const d=DATA[animalEl.value];
+  const m=Number(meadowEl.value);
+  const strategy=getStrategy();
+  meadowValue.textContent=m+'%';
+  document.getElementById('youngLabel').textContent='Butcher '+d.youngName;
+  document.getElementById('adultLabel').textContent='Raise to Adult';
+
+  if(!resourceEl.options.length || !getResourceList(d).some(r=>r.name===resourceEl.value)) refreshResources(d);
+
+  document.getElementById('prodIcon').textContent=d.primaryIcon;
+  document.getElementById('annualProd').textContent=fmt(d.primaryAnnual(m));
+  document.getElementById('annualUnit').textContent=d.primary+' / year';
+  document.getElementById('annualNote').textContent=`At ${m}% meadow`;
+
+  document.getElementById('offspringIcon').textContent=d.offspringIcon;
+  document.getElementById('offspring').textContent=fmt(BREED_CHANCE);
+  document.getElementById('offspringUnit').textContent=d.offspringName+' / year';
+  document.getElementById('feed').textContent=d.feed;
+  document.getElementById('feedNote').textContent=`(${d.oats} oats) per ${d.name.toLowerCase()}`;
+  document.getElementById('importCost').textContent=d.importBase+' + 10';
+
+  document.getElementById('productionTitle').textContent=d.periodTitle;
+  document.getElementById('periodHeader').textContent=d.periodHeader;
+  document.getElementById('yearHeader').textContent=d.yearHeader;
+
+  document.getElementById('prodTable').innerHTML=d.productionRows.map(x=>{
+    const selected=x===Math.round(m/25)*25;
+    return `<tr class="${selected?'selected':''}">
+      <td>${x}%</td><td>${fmt(d.period(x))}</td><td>${fmt(d.annual(x))}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('formulaNote').innerHTML=d.formula;
+
+  document.getElementById('meatHead').textContent=d.meat;
+  document.getElementById('butchery').innerHTML=d.butchery.map((r,idx)=>{
+    const active=(strategy==='young'&&idx===0)||(strategy==='adult'&&idx===1);
+    return `<tr class="${active?'selected':''}"><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`;
+  }).join('');
+  const activeYield=strategy==='adult'?d.adultYield:d.youngYield;
+  document.getElementById('butcheryNote').textContent=
+    strategy==='young'
+      ? `Current strategy: butcher ${d.youngName.toLowerCase()} immediately.`
+      : `Current strategy: raise offspring to adulthood. Adult output assumes a mature established herd; ${d.youngName.toLowerCase()} take ${d.maturityYears} year${d.maturityYears===1?'':'s'} to mature.`;
+
+  const extraFeedPerBreeder=strategy==='adult' ? BREED_CHANCE*d.maturityYears*d.youngFeed : 0;
+  const summaryRows=[
+    [d.primaryIcon,d.primary,d.primaryAnnual(m),2],
+    ['🥩',d.meat+' ('+(strategy==='adult'?'adult':'young')+' strategy)',BREED_CHANCE*activeYield.meat,2],
+    ['🟫','Hides ('+(strategy==='adult'?'adult':'young')+' strategy)',BREED_CHANCE*activeYield.hides,2],
+    ['🌾','Avg Winter Feed burden',d.feed+extraFeedPerBreeder,2]
+  ];
+  document.getElementById('summary').innerHTML=summaryRows.map(r=>
+    `<div class="summary-row"><div>${r[0]} &nbsp; ${r[1]}</div><div class="summary-value">${r[2].toFixed(r[3])}</div></div>`
+  ).join('');
+  document.getElementById('summaryNote').textContent=`Values are averages per ${d.name.toLowerCase()} per year at ${m}% meadow.`;
+
+  document.getElementById('aboutTitle').textContent='ABOUT '+d.plural.toUpperCase();
+  document.getElementById('aboutList').innerHTML=d.about.map(x=>`<li>${x}</li>`).join('');
+  document.getElementById('breedSeason').innerHTML=`Offspring are born in spring.<br><br>Breeding rolls occur in ${d.breedingSeason}.<br><br>Each animal can produce a maximum of one offspring per breeding season.`;
+  document.getElementById('breedChance').textContent=(BREED_CHANCE*100).toFixed(2)+'%';
+  document.getElementById('offspringSmall').textContent=fmt(BREED_CHANCE);
+
+  document.getElementById('econImport').textContent=`${d.importBase} + 10 RW`;
+  document.getElementById('econFeed').textContent=`${d.feed} Feed`;
+  document.getElementById('econOats').textContent=`${d.oats} Oats`;
+
+  const extraMeat=d.adultYield.meat-d.youngYield.meat;
+  const extraHides=d.adultYield.hides-d.youngYield.hides;
+  document.getElementById('strategyCompare').innerHTML=
+    `<b>Raise to adult vs butcher young:</b><br>`+
+    `Gain per offspring: <span class="green">+${extraMeat} ${d.meat}</span>`+
+    `${extraHides>0?` and <span class="green">+${extraHides} Hide${extraHides===1?'':'s'}</span>`:''}.<br>`+
+    `Cost per offspring: <b>${d.youngFeed*d.maturityYears} extra feed</b> (${(d.youngFeed*d.maturityYears/2).toFixed(1)} oats) across <b>${d.maturityYears} year${d.maturityYears===1?'':'s'}</b> of maturation.`;
+
+  const herdSize=Math.max(1,Math.floor(Number(herdSizeEl.value)||1));
+  herdSizeEl.value=herdSize;
+
+  // Adult winter feed.
+  const baseFeed=herdSize*d.feed;
+
+  // In a mature steady-state herd, each year's births create a pipeline of young animals.
+  // Cows: calves take 2 years, so two average calf cohorts are being raised.
+  // Sheep: lambs take 1 year, so one average lamb cohort is being raised.
+  const expectedYoungPerYear=herdSize*BREED_CHANCE;
+  const youngInPipeline=strategy==='adult' ? expectedYoungPerYear*d.maturityYears : 0;
+  const extraRaisingFeed=strategy==='adult' ? youngInPipeline*d.youngFeed : 0;
+
+  const totalFeed=baseFeed+extraRaisingFeed;
+  const totalOats=totalFeed/2;
+
+  document.getElementById('adultCount').textContent=herdSize;
+  document.getElementById('youngCount').textContent=youngInPipeline.toFixed(1);
+  document.getElementById('baseFeedTotal').textContent=baseFeed.toFixed(1).replace('.0','');
+  document.getElementById('extraFeedTotal').textContent=extraRaisingFeed.toFixed(1);
+  document.getElementById('totalFeedTotal').textContent=totalFeed.toFixed(1);
+  document.getElementById('oatsTotal').textContent=totalOats.toFixed(1);
+
+  document.getElementById('feedPlannerNote').textContent=
+    strategy==='adult'
+      ? `Includes the average ${d.youngName.toLowerCase()} still being raised to adulthood (${d.maturityYears}-year maturation). 1 oat makes 2 feed.`
+      : `Offspring are butchered young, so only the ${herdSize} adult ${d.plural.toLowerCase()} are included in winter feed. 1 oat makes 2 feed.`;
+
+  const resources=getResourceList(d);
+  const r=resources.find(x=>x.name===resourceEl.value) || resources[0];
+  const target=Math.max(1,Number(targetEl.value)||1);
+  const perAnimal=r.annual(m);
+
+  if(perAnimal<=0){
+    document.getElementById('animalsNeeded').innerHTML=`— <span>${d.plural}</span>`;
+    document.getElementById('goalNote').textContent=
+      `${r.name} are not produced with the current ${strategy==='young'?'young-butchery':'adult-butchery'} strategy. Choose a different strategy.`;
+  }else{
+    const needed=Math.ceil((target-1e-9)/perAnimal);
+    document.getElementById('animalsNeeded').innerHTML=`${needed} <span>${d.plural}</span>`;
+    document.getElementById('goalNote').textContent=
+      `To average ${target} ${r.name} per year at ${m}% meadow (${fmt(perAnimal)} per ${d.name.toLowerCase()}/year).`+
+      (strategy==='adult' && r.name!==d.primary
+        ? ` Adult butchery assumes a mature herd; ${d.youngName.toLowerCase()} require ${d.maturityYears} year${d.maturityYears===1?'':'s'} to mature.`
+        : '');
+  }
+}
+
+animalEl.addEventListener('change',()=>{refreshResources(DATA[animalEl.value]);render();});
+meadowEl.addEventListener('input',render);
+resourceEl.addEventListener('change',render);
+targetEl.addEventListener('input',render);
+herdSizeEl.addEventListener('input',render);
+document.querySelectorAll('input[name="strategy"]').forEach(el=>{
+  el.addEventListener('change',()=>{refreshResources(DATA[animalEl.value]);render();});
+});
+
+refreshResources(DATA.cow);
+try{render();}catch(err){
+  console.error(err);
+  document.getElementById('goalNote').textContent='Planner error: '+err.message;
+}
+</script>
+</body>
+</html>
