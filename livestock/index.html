@@ -309,7 +309,7 @@ footer{text-align:center;color:#8f8066;font-size:13px;padding:16px 0 3px}
     </div>
   </section>
 
-  <footer>All calculations based on the Manor Lords mechanics supplied for this planner. Values are averages. • Beta v8.097</footer>
+  <footer>All calculations based on the Manor Lords mechanics supplied for this planner. Values are averages. • Beta v<span id="gameVersion">8.097</span></footer>
 </div>
 
 <script>
@@ -321,51 +321,163 @@ const targetEl=document.getElementById('target');
 const herdSizeEl=document.getElementById('herdSize');
 function getStrategy(){return document.querySelector('input[name="strategy"]:checked').value;}
 
-const BREED_CHANCE = 1 - Math.pow(0.95,9);
+// ============================================================
+// GAME BALANCE SETTINGS
+// Edit numbers in THIS section when Manor Lords balance changes.
+// The rest of the planner reads from these values automatically.
+// ============================================================
 
-function cowMilk(m){ return 9 * (1 + m/100); }
-function sheepWool(m){ return 2 + m/100; }
+const GAME = {
+  version: '8.097',
+
+  common: {
+    breedChancePerRoll: 0.05,     // 5%
+    breedRollIntervalDays: 10,
+    breedSeasonDays: 90,
+    feedPerOat: 2,                // 1 oat makes 2 feed
+    livestockTradeCost: 10
+  },
+
+  cow: {
+    // Milk
+    milkBasePerMonth: 1,
+    milkMeadowBonus: 1,
+    milkMonthsPerYear: 9,         // March through November
+
+    // Butchery
+    calfBeef: 2,
+    calfHides: 1,
+    adultBeef: 4,
+    adultHides: 2,
+
+    // Feed / growth
+    adultWinterFeed: 6,
+    calfWinterFeed: 3,
+    maturityYears: 2,
+
+    // Trade
+    importBaseCost: 50
+  },
+
+  sheep: {
+    // Wool
+    woolBasePerYear: 2,
+    woolMeadowBonus: 1,
+
+    // Butchery
+    lambMutton: 1,
+    lambHides: 0,
+    adultMutton: 2,
+    adultHides: 1,
+
+    // Feed / growth
+    adultWinterFeed: 3,
+    lambWinterFeed: 3,
+    maturityYears: 1,
+
+    // Trade
+    importBaseCost: 20
+  }
+};
+
+// ============================================================
+// CALCULATED VALUES — normally you should NOT need to edit below
+// ============================================================
+
+const BREED_ROLLS = Math.floor(GAME.common.breedSeasonDays / GAME.common.breedRollIntervalDays);
+const BREED_CHANCE = 1 - Math.pow(1 - GAME.common.breedChancePerRoll, BREED_ROLLS);
+
+function cowMilk(m){
+  const c=GAME.cow;
+  return c.milkMonthsPerYear * (c.milkBasePerMonth + c.milkMeadowBonus*(m/100));
+}
+
+function sheepWool(m){
+  const s=GAME.sheep;
+  return s.woolBasePerYear + s.woolMeadowBonus*(m/100);
+}
+
+function oatsForFeed(feed){
+  return feed / GAME.common.feedPerOat;
+}
 
 const DATA = {
   cow:{
     name:'Cow', plural:'Cows', youngName:'Calves',
     primary:'Milk', primaryIcon:'🥛', primaryAnnual:cowMilk,
     offspringName:'Calves', offspringIcon:'🐄',
-    feed:6, oats:3, youngFeed:3, importBase:50, maturityYears:2,
-    youngYield:{meat:2,hides:1}, adultYield:{meat:4,hides:2},
+
+    feed:GAME.cow.adultWinterFeed,
+    oats:oatsForFeed(GAME.cow.adultWinterFeed),
+    youngFeed:GAME.cow.calfWinterFeed,
+    importBase:GAME.cow.importBaseCost,
+    tradeCost:GAME.common.livestockTradeCost,
+    maturityYears:GAME.cow.maturityYears,
+
+    youngYield:{meat:GAME.cow.calfBeef,hides:GAME.cow.calfHides},
+    adultYield:{meat:GAME.cow.adultBeef,hides:GAME.cow.adultHides},
     meat:'Beef',
-    periodTitle:'🥛 MILK PRODUCTION (Mar - Nov)', periodHeader:'Milk / Month', yearHeader:'Milk / Year',
-    productionRows:[0,25,50,75,100], period:m=>1+m/100, annual:m=>cowMilk(m),
-    formula:'Milk / Month = 1 base + (1 × meadow chance)<br>Milk / Year = Milk / Month × 9 months',
-    butchery:[['Butcher Calf','2','1'],['Butcher Cow','4','2']],
+
+    periodTitle:'🥛 MILK PRODUCTION (Mar - Nov)',
+    periodHeader:'Milk / Month',
+    yearHeader:'Milk / Year',
+    productionRows:[0,25,50,75,100],
+    period:m=>GAME.cow.milkBasePerMonth + GAME.cow.milkMeadowBonus*(m/100),
+    annual:m=>cowMilk(m),
+    formula:`Milk / Month = ${GAME.cow.milkBasePerMonth} base + (${GAME.cow.milkMeadowBonus} × meadow chance)<br>Milk / Year = Milk / Month × ${GAME.cow.milkMonthsPerYear} months`,
+
+    butchery:[
+      ['Butcher Calf',String(GAME.cow.calfBeef),String(GAME.cow.calfHides)],
+      ['Butcher Cow',String(GAME.cow.adultBeef),String(GAME.cow.adultHides)]
+    ],
+
     about:[
-      'Cows produce milk each month from March to November.',
-      '5% chance to breed every 10 days for 90 days in summer.',
-      'Calves give 2 Beef and 1 Hide; adult cows give 4 Beef and 2 Hides.',
-      'Calves take 2 years to mature into adult cows.',
-      '6 feed (3 oats) needed per winter per adult cow.',
-      'Import cost: 50 + 10 Regional Wealth.'
+      `Cows produce milk each month for ${GAME.cow.milkMonthsPerYear} months from March to November.`,
+      `${Math.round(GAME.common.breedChancePerRoll*100)}% chance to breed every ${GAME.common.breedRollIntervalDays} days for ${GAME.common.breedSeasonDays} days in summer.`,
+      `Calves give ${GAME.cow.calfBeef} Beef and ${GAME.cow.calfHides} Hide; adult cows give ${GAME.cow.adultBeef} Beef and ${GAME.cow.adultHides} Hides.`,
+      `Calves take ${GAME.cow.maturityYears} years to mature into adult cows.`,
+      `${GAME.cow.adultWinterFeed} feed (${oatsForFeed(GAME.cow.adultWinterFeed)} oats) needed per winter per adult cow.`,
+      `Import cost: ${GAME.cow.importBaseCost} + ${GAME.common.livestockTradeCost} Regional Wealth.`
     ],
     breedingSeason:'summer'
   },
+
   sheep:{
     name:'Sheep', plural:'Sheep', youngName:'Lambs',
     primary:'Wool', primaryIcon:'🧶', primaryAnnual:sheepWool,
     offspringName:'Lambs', offspringIcon:'🐑',
-    feed:3, oats:1.5, youngFeed:3, importBase:20, maturityYears:1,
-    youngYield:{meat:1,hides:0}, adultYield:{meat:2,hides:1},
+
+    feed:GAME.sheep.adultWinterFeed,
+    oats:oatsForFeed(GAME.sheep.adultWinterFeed),
+    youngFeed:GAME.sheep.lambWinterFeed,
+    importBase:GAME.sheep.importBaseCost,
+    tradeCost:GAME.common.livestockTradeCost,
+    maturityYears:GAME.sheep.maturityYears,
+
+    youngYield:{meat:GAME.sheep.lambMutton,hides:GAME.sheep.lambHides},
+    adultYield:{meat:GAME.sheep.adultMutton,hides:GAME.sheep.adultHides},
     meat:'Mutton',
-    periodTitle:'🧶 WOOL PRODUCTION', periodHeader:'Base Wool', yearHeader:'Avg Wool / Year',
-    productionRows:[0,25,50,75,100], period:m=>2, annual:m=>sheepWool(m),
-    formula:'Wool / Year = 2 base + (1 × meadow chance)',
-    butchery:[['Butcher Lamb','1','—'],['Butcher Sheep','2','1']],
+
+    periodTitle:'🧶 WOOL PRODUCTION',
+    periodHeader:'Base Wool',
+    yearHeader:'Avg Wool / Year',
+    productionRows:[0,25,50,75,100],
+    period:m=>GAME.sheep.woolBasePerYear,
+    annual:m=>sheepWool(m),
+    formula:`Wool / Year = ${GAME.sheep.woolBasePerYear} base + (${GAME.sheep.woolMeadowBonus} × meadow chance)`,
+
+    butchery:[
+      ['Butcher Lamb',String(GAME.sheep.lambMutton),GAME.sheep.lambHides?String(GAME.sheep.lambHides):'—'],
+      ['Butcher Sheep',String(GAME.sheep.adultMutton),String(GAME.sheep.adultHides)]
+    ],
+
     about:[
-      'Sheep produce 2 base Wool per year with a chance for +1 from Meadow.',
-      '5% chance to breed every 10 days for 90 days in autumn.',
-      'Lambs give 1 Mutton; adult sheep give 2 Mutton and 1 Hide.',
-      'Lambs take 1 year to mature into adult sheep.',
-      '3 feed (1.5 oats) needed per winter per adult sheep.',
-      'Import cost: 20 + 10 Regional Wealth.'
+      `Sheep produce ${GAME.sheep.woolBasePerYear} base Wool per year with a chance for +${GAME.sheep.woolMeadowBonus} from Meadow.`,
+      `${Math.round(GAME.common.breedChancePerRoll*100)}% chance to breed every ${GAME.common.breedRollIntervalDays} days for ${GAME.common.breedSeasonDays} days in autumn.`,
+      `Lambs give ${GAME.sheep.lambMutton} Mutton; adult sheep give ${GAME.sheep.adultMutton} Mutton and ${GAME.sheep.adultHides} Hide.`,
+      `Lambs take ${GAME.sheep.maturityYears} year to mature into adult sheep.`,
+      `${GAME.sheep.adultWinterFeed} feed (${oatsForFeed(GAME.sheep.adultWinterFeed)} oats) needed per winter per adult sheep.`,
+      `Import cost: ${GAME.sheep.importBaseCost} + ${GAME.common.livestockTradeCost} Regional Wealth.`
     ],
     breedingSeason:'autumn'
   }
@@ -409,7 +521,7 @@ function render(){
   document.getElementById('offspringUnit').textContent=d.offspringName+' / year';
   document.getElementById('feed').textContent=d.feed;
   document.getElementById('feedNote').textContent=`(${d.oats} oats) per ${d.name.toLowerCase()}`;
-  document.getElementById('importCost').textContent=d.importBase+' + 10';
+  document.getElementById('importCost').textContent=d.importBase+' + '+d.tradeCost;
 
   document.getElementById('productionTitle').textContent=d.periodTitle;
   document.getElementById('periodHeader').textContent=d.periodHeader;
@@ -452,7 +564,7 @@ function render(){
   document.getElementById('breedChance').textContent=(BREED_CHANCE*100).toFixed(2)+'%';
   document.getElementById('offspringSmall').textContent=fmt(BREED_CHANCE);
 
-  document.getElementById('econImport').textContent=`${d.importBase} + 10 RW`;
+  document.getElementById('econImport').textContent=`${d.importBase} + ${d.tradeCost} RW`;
   document.getElementById('econFeed').textContent=`${d.feed} Feed`;
   document.getElementById('econOats').textContent=`${d.oats} Oats`;
 
@@ -489,8 +601,8 @@ function render(){
 
   document.getElementById('feedPlannerNote').textContent=
     strategy==='adult'
-      ? `Includes the average ${d.youngName.toLowerCase()} still being raised to adulthood (${d.maturityYears}-year maturation). 1 oat makes 2 feed.`
-      : `Offspring are butchered young, so only the ${herdSize} adult ${d.plural.toLowerCase()} are included in winter feed. 1 oat makes 2 feed.`;
+      ? `Includes the average ${d.youngName.toLowerCase()} still being raised to adulthood (${d.maturityYears}-year maturation). ${GAME.common.feedPerOat === 2 ? '1 oat makes 2 feed.' : `1 oat makes ${GAME.common.feedPerOat} feed.`}`
+      : `Offspring are butchered young, so only the ${herdSize} adult ${d.plural.toLowerCase()} are included in winter feed. ${GAME.common.feedPerOat === 2 ? '1 oat makes 2 feed.' : `1 oat makes ${GAME.common.feedPerOat} feed.`}`;
 
   const resources=getResourceList(d);
   const r=resources.find(x=>x.name===resourceEl.value) || resources[0];
@@ -521,6 +633,7 @@ document.querySelectorAll('input[name="strategy"]').forEach(el=>{
   el.addEventListener('change',()=>{refreshResources(DATA[animalEl.value]);render();});
 });
 
+document.getElementById('gameVersion').textContent=GAME.version;
 refreshResources(DATA.cow);
 try{render();}catch(err){
   console.error(err);
