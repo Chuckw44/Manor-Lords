@@ -6,241 +6,80 @@
 <title>Manor Lords Community Tools</title>
 <style>
 :root{
-  --ink:#2b2016;
-  --ink-soft:#5d4633;
-  --paper:#dfc79f;
-  --paper-light:#f1e3c3;
-  --gold:#a27634;
-  --wood:#181512;
-  --red:#6d2d25;
+--bg:#171512;--paper:#efe2c3;--paper2:#dec49b;--wood:#6f532f;--gold:#b58a3a;--ink:#2d2016;--red:#6e2d25;
 }
 *{box-sizing:border-box}
-html,body{
-  margin:0;
-  min-height:100%;
-  font-family:Georgia,"Times New Roman",serif;
-}
 body{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:22px;
-  background:
-    radial-gradient(circle at 50% 8%,rgba(255,255,255,.05),transparent 34%),
-    repeating-linear-gradient(90deg,#171512 0 18px,#1c1915 18px 36px);
+margin:0;padding:20px;min-height:100vh;
+font-family:Georgia,serif;
+background:radial-gradient(circle at top,rgba(255,255,255,.05),transparent 35%),repeating-linear-gradient(90deg,#171512 0 18px,#1c1915 18px 36px);
+display:flex;justify-content:center;align-items:center;
 }
-.shell{
-  width:min(940px,96vw);
-  padding:12px;
-  background:#2b2118;
-  border:2px solid #6e512e;
-  box-shadow:0 20px 55px rgba(0,0,0,.65);
+.frame{
+width:min(1050px,95vw);
+background:linear-gradient(var(--paper),var(--paper2));
+border:3px solid var(--wood);
+padding:36px;
+box-shadow:0 18px 40px rgba(0,0,0,.55);
+color:var(--ink);
 }
-.page{
-  position:relative;
-  overflow:hidden;
-  padding:42px 42px 30px;
-  text-align:center;
-  color:var(--ink);
-  background:
-    radial-gradient(circle at 26% 8%,rgba(255,255,255,.22),transparent 24%),
-    radial-gradient(circle at 74% 36%,rgba(103,73,39,.08),transparent 31%),
-    repeating-linear-gradient(0deg,rgba(114,83,47,.035) 0 2px,transparent 2px 7px),
-    linear-gradient(180deg,#f2e5c8,var(--paper));
-  border:1px solid #9b7950;
+h1{margin:0;text-align:center;font-size:64px;font-weight:500}
+h2{margin:8px 0 30px;text-align:center;color:var(--red);letter-spacing:.25em;font-weight:500}
+p{max-width:700px;margin:0 auto 30px;text-align:center;font-size:18px}
+.grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+gap:22px;
 }
-.page:before{
-  content:"";
-  position:absolute;
-  inset:9px;
-  border:1px solid rgba(104,73,38,.30);
-  pointer-events:none;
+.card{
+display:block;
+text-decoration:none;
+color:inherit;
+background:linear-gradient(#f6ead1,#e5cfaa);
+border:2px solid #8b6940;
+padding:26px;
+transition:.15s;
 }
-.header-mark{
-  width:66px;
-  height:30px;
-  margin:0 auto 8px;
-  color:#7b5a2e;
-}
-h1{
-  margin:0;
-  font-size:clamp(50px,7vw,78px);
-  line-height:.95;
-  font-weight:500;
-  letter-spacing:.01em;
-}
-h2{
-  margin:11px 0 12px;
-  color:var(--red);
-  font-size:clamp(17px,2vw,25px);
-  font-weight:500;
-  letter-spacing:.30em;
-}
-.intro{
-  margin:0 auto 34px;
-  max-width:650px;
-  font-size:18px;
-  line-height:1.4;
-  color:#493526;
-}
-.tools{
-  display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:24px;
-}
-.tool{
-  position:relative;
-  display:block;
-  min-height:260px;
-  padding:25px 24px 23px;
-  text-decoration:none;
-  color:var(--ink);
-  background:
-    repeating-linear-gradient(0deg,rgba(116,87,51,.035) 0 2px,transparent 2px 7px),
-    linear-gradient(180deg,#f4e8ce,#dfc69d);
-  border:2px solid #8a6840;
-  outline:1px solid rgba(189,148,78,.65);
-  transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease;
-}
-.tool:before,.tool:after{
-  content:"";
-  position:absolute;
-  width:23px;height:23px;
-  pointer-events:none;
-}
-.tool:before{
-  left:7px;top:7px;
-  border-left:2px solid #b1843e;
-  border-top:2px solid #b1843e;
-}
-.tool:after{
-  right:7px;bottom:7px;
-  border-right:2px solid #b1843e;
-  border-bottom:2px solid #b1843e;
-}
-.tool:hover{
-  transform:translateY(-4px);
-  border-color:#a77b35;
-  box-shadow:0 12px 22px rgba(57,37,18,.25);
-}
-.icon-frame{
-  width:108px;
-  height:108px;
-  margin:0 auto 10px;
-  display:grid;
-  place-items:center;
-  border-radius:50%;
-  border:1px solid rgba(103,72,35,.40);
-  background:rgba(225,206,168,.45);
-}
-.icon-frame svg{
-  width:82px;
-  height:82px;
-  color:#4b3a28;
-}
-.tool-title{
-  margin-top:4px;
-  font-size:29px;
-  font-weight:700;
-}
-.rule{
-  width:90px;
-  height:1px;
-  margin:11px auto 12px;
-  background:#a58250;
-}
-.desc{
-  max-width:310px;
-  margin:auto;
-  color:#4d3827;
-  font-size:16px;
-  line-height:1.42;
-}
-.open{
-  display:inline-block;
-  margin-top:17px;
-  color:#6d2d25;
-  font-size:14px;
-  font-weight:700;
-  letter-spacing:.06em;
-}
-footer{
-  margin-top:34px;
-  color:var(--ink-soft);
-  font-size:13px;
-}
-footer .beta{color:var(--red);font-weight:700}
-@media(max-width:720px){
-  body{padding:7px}
-  .shell{padding:6px}
-  .page{padding:30px 15px 22px}
-  .tools{grid-template-columns:1fr}
-  .tool{min-height:235px}
-}
+.card:hover{transform:translateY(-4px);box-shadow:0 8px 18px rgba(0,0,0,.25);border-color:var(--gold)}
+.icon{font-size:52px;text-align:center}
+.title{margin-top:10px;text-align:center;font-size:28px;font-weight:bold}
+.rule{width:80px;height:1px;background:#a37b46;margin:12px auto}
+.desc{text-align:center;line-height:1.45;font-size:16px}
+footer{margin-top:30px;text-align:center;color:#5b4430;font-size:14px}
 </style>
 </head>
 <body>
-<div class="shell">
-  <main class="page">
-    <svg class="header-mark" viewBox="0 0 100 40" aria-hidden="true">
-      <path d="M7 21h25M68 21h25M38 21h24M50 9v24M42 13l8 8 8-8M42 29l8-8 8 8"
-            fill="none" stroke="currentColor" stroke-width="2"/>
-    </svg>
+<div class="frame">
+<h1>Manor Lords</h1>
+<h2>COMMUNITY TOOLS</h2>
+<p>A collection of interactive planning tools for Manor Lords.</p>
 
-    <h1>Manor Lords</h1>
-    <h2>COMMUNITY TOOLS</h2>
-    <p class="intro">A growing collection of practical planning tools for Manor Lords.</p>
+<div class="grid">
 
-    <section class="tools">
-      <a class="tool" href="apiary/">
-        <div class="icon-frame">
-          <svg viewBox="0 0 120 120" role="img" aria-label="Medieval bee line illustration">
-            <g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-              <ellipse cx="61" cy="61" rx="22" ry="30"/>
-              <path d="M43 48h35M40 60h42M42 73h37"/>
-              <path d="M50 35 43 22M72 35l7-13"/>
-              <circle cx="41" cy="20" r="3"/>
-              <circle cx="81" cy="20" r="3"/>
-              <path d="M42 45C20 29 12 45 20 58c7 11 18 8 25 4"/>
-              <path d="M80 45c22-16 30 0 22 13-7 11-18 8-25 4"/>
-              <path d="M49 88 39 101M73 88l10 13"/>
-              <path d="M61 91v15"/>
-            </g>
-          </svg>
-        </div>
-        <div class="tool-title">Apiary Planner</div>
-        <div class="rule"></div>
-        <div class="desc">Plan ideal apiaries, Wilding, and expected honey production for your region.</div>
-        <span class="open">OPEN PLANNER →</span>
-      </a>
+<a class="card" href="apiary/">
+<div class="icon">🐝</div>
+<div class="title">Apiary Planner</div>
+<div class="rule"></div>
+<div class="desc">Plan apiaries, Wilding, region capacity and expected honey production.</div>
+</a>
 
-      <a class="tool" href="pigsty/">
-        <div class="icon-frame">
-          <svg viewBox="0 0 120 120" role="img" aria-label="Medieval pig line illustration">
-            <g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-              <ellipse cx="57" cy="61" rx="39" ry="27"/>
-              <ellipse cx="88" cy="60" rx="23" ry="20"/>
-              <path d="M103 61h12l-9 9"/>
-              <path d="M76 45 80 28l11 15M94 43l13-12-3 17"/>
-              <circle cx="94" cy="56" r="2.5" fill="currentColor"/>
-              <ellipse cx="92" cy="69" rx="10" ry="7"/>
-              <circle cx="88" cy="69" r="1.5" fill="currentColor"/>
-              <circle cx="96" cy="69" r="1.5" fill="currentColor"/>
-              <path d="M31 82v24M49 85v21M72 84v22M88 79v27"/>
-              <path d="M18 55q-13 2-12 13c1 8 8 10 13 6"/>
-              <path d="M21 46c-7-5-9-11-5-17"/>
-            </g>
-          </svg>
-        </div>
-        <div class="tool-title">Pigsty Planner</div>
-        <div class="rule"></div>
-        <div class="desc">Estimate pork production and the number of pigsties needed for your yearly goal.</div>
-        <span class="open">OPEN PLANNER →</span>
-      </a>
-    </section>
+<a class="card" href="pigsty/">
+<div class="icon">🐖</div>
+<div class="title">Pigsty Planner</div>
+<div class="rule"></div>
+<div class="desc">Estimate pork production and determine how many pigsties you need.</div>
+</a>
 
-    <footer>Built for Manor Lords Beta <span class="beta">v8.097</span></footer>
-  </main>
+<a class="card" href="livestock/">
+<div class="icon">🐄</div>
+<div class="title">Livestock Planner</div>
+<div class="rule"></div>
+<div class="desc">Plan cows and sheep, compare butchery strategies, and calculate feed requirements.</div>
+</a>
+
+</div>
+
+<footer>Built for Manor Lords Beta v8.097</footer>
 </div>
 </body>
 </html>
