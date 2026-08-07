@@ -1,1 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pigsty Planner — Manor Lords</title>
+<style>
+:root{--ink:#22170f;--paper:#ead9b8;--paper2:#f3e7cb;--dark:#26241f;--red:#7a2d24;--green:#375c25;--gold:#a6762c}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:#171613;color:var(--ink);font-family:Georgia,"Times New Roman",serif}
+body{padding:14px;background:repeating-linear-gradient(90deg,#181713 0 18px,#1c1b17 18px 36px)}
+.app{width:min(1450px,100%);margin:auto;padding:18px 20px 10px;position:relative;background:repeating-linear-gradient(0deg,rgba(118,88,49,.035) 0 2px,transparent 2px 7px),linear-gradient(180deg,#f2e4c7,#e4cfaa);border:1px solid #8e724d;box-shadow:0 16px 45px #000}
+header{position:relative;text-align:center;min-height:150px;padding:0 200px}
+h1{margin:0;font-size:clamp(48px,6vw,82px);line-height:.95;font-weight:500}
+.manor{margin-top:10px;color:#6f2f27;font-size:clamp(20px,2vw,31px);letter-spacing:.28em}
+.subtitle{margin-top:10px;font-size:18px}
+.pig-art{position:absolute;left:18px;top:2px;width:200px;height:130px}
+.banner{position:absolute;right:34px;top:-18px;width:100px;height:140px;background:linear-gradient(180deg,#8e3d31,#6f271f);border:2px solid #5a241e;clip-path:polygon(0 0,100% 0,100% 86%,50% 100%,0 86%);display:grid;place-items:center}
+.banner svg{width:58px;height:58px;color:#ead6ad}
+.top-grid{display:grid;grid-template-columns:1.15fr .95fr .95fr 1.25fr;gap:14px}
+.panel{background:repeating-linear-gradient(0deg,rgba(115,85,47,.035) 0 2px,transparent 2px 7px),linear-gradient(180deg,var(--paper2),var(--paper));border:1px solid #9b7b53;box-shadow:inset 0 0 0 3px rgba(255,255,255,.16)}
+.cut{clip-path:polygon(3% 0,97% 0,100% 6%,100% 94%,97% 100%,3% 100%,0 94%,0 6%)}
+.dark-title{background:linear-gradient(180deg,#2b2923,#1c1b17);color:#e8d9b9;font-size:20px;padding:9px 12px;text-align:center}
+.control-body{padding:10px 18px 15px}
+.control-label{font-size:17px;font-weight:700;margin-bottom:15px}
+.slider-row{display:grid;grid-template-columns:1fr 70px;gap:14px;align-items:center}
+input[type=range]{width:100%;accent-color:#5f4525}
+.num{width:70px;padding:7px 4px;text-align:center;font:700 20px Georgia;border:1px solid #a78960;background:#f1dfbd}
+.ticks{display:flex;justify-content:space-between;font-size:14px;margin-top:2px}
+.info-box{display:grid;grid-template-columns:58px 1fr;gap:11px;margin-top:17px;padding:13px;border:1px solid #b79b73;background:rgba(225,207,171,.54);line-height:1.25;font-size:14px}
+.tree-icon{font-size:46px}
+.metric{min-height:203px;display:flex;flex-direction:column;align-items:center;text-align:center;padding:8px 14px 15px}
+.panel-title{font-weight:700;font-size:19px;text-align:center;padding:13px 10px 9px}
+.metric .icon{font-size:37px;margin:3px 0}
+.metric .value{font-size:54px;line-height:1;margin-top:12px}
+.metric .unit{font-size:22px;font-weight:700;margin-top:3px}
+.metric .desc{margin-top:18px;font-size:15px}
+.goal-card{padding:7px 18px 15px}
+.goal-head{display:flex;gap:12px;align-items:flex-start}
+.target-icon{font-size:40px;color:#7c321f}
+.goal-title{flex:1;text-align:center;font-weight:700;font-size:19px}
+.goal-sub{text-align:center;font-size:14px;margin-top:3px}
+.goal-row{display:grid;grid-template-columns:1fr 102px;gap:10px;align-items:center;margin-top:17px;padding-bottom:10px;border-bottom:1px solid #bfa47e}
+#goal{width:102px;padding:6px;font:700 18px Georgia;background:#f0dfbc;border:1px solid #a98c64}
+.needed-label{text-align:center;font-weight:700;font-size:18px;margin-top:10px}
+#needed{text-align:center;font-size:48px;color:#732b1f;line-height:1.05}
+#actual{text-align:center;font-size:14px}
+.formula-ribbon{margin:14px 0;padding:13px 18px;display:grid;grid-template-columns:55px 1fr;gap:14px;align-items:center;font-size:15px;line-height:1.35}
+.star{font-size:42px;text-align:center}
+.lower{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.table-panel{overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{border:1px solid rgba(112,86,55,.45);padding:6px 7px;text-align:center}
+th{background:rgba(246,231,200,.48)}
+tbody tr.selected{background:linear-gradient(90deg,rgba(181,134,52,.30),rgba(194,148,62,.42));font-weight:700}
+.positive{color:#315c26;font-weight:700}
+.chart-wrap{height:355px;padding:6px 14px 10px}
+canvas{width:100%;height:100%;display:block}
+.notes{display:grid;grid-template-columns:.85fr 1.45fr;gap:14px;margin-top:12px}
+.note{min-height:88px;padding:12px 15px;display:grid;grid-template-columns:42px 1fr;gap:10px}
+.note-icon{font-size:32px;text-align:center}
+.note strong{display:block;margin-bottom:5px}
+.note p{margin:0;font-size:14px;line-height:1.35}
+.note ul{margin:0;padding-left:19px;font-size:14px;line-height:1.5}
+footer{text-align:center;padding:14px 0 2px;font-size:14px;font-weight:700}
+footer span{color:#6e2e26}
+@media(max-width:1050px){header{padding:0 140px}.pig-art{width:150px}.banner{width:80px;height:110px}.top-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:720px){body{padding:5px}.app{padding:12px 10px 7px}header{padding:0;min-height:auto}.pig-art,.banner{display:none}.top-grid,.lower,.notes{grid-template-columns:1fr}.chart-wrap{height:300px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+<svg class="pig-art" viewBox="0 0 260 150" aria-label="Pig and piglet illustration">
+<g fill="none" stroke="#3c3021" stroke-width="2"><ellipse cx="100" cy="70" rx="70" ry="43"/><ellipse cx="164" cy="70" rx="27" ry="22"/><path d="M185 70h23l-18 12M151 52l9-20 11 19M177 53l16-16-3 24M62 103v31M90 107v28M128 107v28M150 97v33M28 64q-20 8-12 24q7 10 17 4"/><circle cx="174" cy="65" r="2" fill="#3c3021"/><ellipse cx="212" cy="111" rx="28" ry="16"/><ellipse cx="235" cy="109" rx="12" ry="10"/><path d="M195 123v15M217 125v13M231 118v18M241 116v18M204 99l6-11 7 12"/></g></svg>
+<div class="banner"><svg viewBox="0 0 100 100"><path d="M22 36c0-18 13-28 28-28s28 10 28 28v20c0 22-13 35-28 35S22 78 22 56Z" fill="none" stroke="currentColor" stroke-width="5"/><path d="M23 32 8 16v28M77 32 92 16v28" fill="none" stroke="currentColor" stroke-width="5"/><ellipse cx="50" cy="60" rx="20" ry="14" fill="none" stroke="currentColor" stroke-width="4"/><circle cx="43" cy="59" r="3" fill="currentColor"/><circle cx="57" cy="59" r="3" fill="currentColor"/></svg></div>
+<h1>PIGSTY PLANNER</h1><div class="manor">MANOR LORDS</div><div class="subtitle">Plan your pig production based on Pannage (Woodland) percentage.</div>
+</header>
 
+<section class="top-grid">
+<div class="panel"><div class="dark-title">↠ PANNAGE (WOODLAND) ↞</div><div class="control-body">
+<div class="control-label">Pannage / Woodland %</div>
+<div class="slider-row"><input id="pannage" type="range" min="0" max="100" step="1" value="50"><input id="pannageNum" class="num" type="number" min="0" max="100" step="1" value="50"></div>
+<div class="ticks"><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div>
+<div class="info-box"><div class="tree-icon">🌲</div><div>More woodland (Pannage) reduces the time between pork production.<br>Formula: <b>73 / (1 + Pannage%) days</b></div></div>
+</div></div>
+
+<div class="panel cut metric"><div class="panel-title">⌛ &nbsp; PRODUCTION INTERVAL</div><div id="interval" class="value">48.67</div><div class="unit">days</div><div class="desc">Time between 2 pork</div></div>
+
+<div class="panel cut metric"><div class="panel-title">AVG PORK PER YEAR<br>PER PIGSTY</div><div class="icon">🍖</div><div id="avg" class="value">15.00</div><div class="unit">pork / year</div><div class="desc">Average production<br><span id="conservative">Conservative year: 14 pork</span></div></div>
+
+<div class="panel cut goal-card"><div class="goal-head"><div class="target-icon">◎</div><div><div class="goal-title">PIGSTIES NEEDED<br><small>(BASED ON YOUR GOAL)</small></div><div class="goal-sub">Uses the lower-output year so your target is reliably met.</div></div></div>
+<div class="goal-row"><label for="goal">Desired Pork per Year:</label><input id="goal" type="number" min="1" step="1" value="300"></div>
+<div class="needed-label">Pigsties Needed:</div><div id="needed">20</div><div id="actual">Conservative Production: 300 pork/year</div></div>
+</section>
+
+<section class="panel formula-ribbon"><div class="star">✧</div><div>Base production is <b>2 pork every 73 days</b> with 0% Pannage.<br>Production time is reduced by your total Pannage (Woodland) percentage.<br><b>Pigsties Needed</b> uses whole completed cycles in a 365-day year, so it plans for the lower-output year.</div></section>
+
+<section class="lower">
+<div class="panel table-panel"><div class="dark-title">↠ PRODUCTION TABLE (PER PIGSTY) ↞</div><table><thead><tr><th>Pannage %</th><th>Days per 2 Pork</th><th>Avg Pork per Year</th><th>Gain vs 0%</th><th>Improvement</th></tr></thead><tbody id="tbody"></tbody></table>
+<div style="padding:11px 13px;font-size:13px;line-height:1.35">Values use the formula: 2 pork every 73 / (1 + Pannage%) days.<br>Avg pork per year = 2 × 365 / Days per 2 Pork.</div></div>
+
+<div><div class="panel"><div class="dark-title">↠ PORK PER YEAR PER PIGSTY ↞</div><div class="chart-wrap"><canvas id="chart"></canvas></div></div>
+<div class="notes"><div class="panel note"><div class="note-icon">⚖</div><div><strong>LINEAR GAIN</strong><p>Each additional 1% of Pannage increases average pork production by the same amount.</p></div></div>
+<div class="panel note"><div class="note-icon">✓</div><div><strong>KEY POINTS</strong><ul><li>0% Pannage ≈ 10 pork/year per pigsty.</li><li>50% Pannage ≈ 15 pork/year per pigsty.</li><li>100% Pannage ≈ 20 pork/year per pigsty.</li></ul></div></div></div></div>
+</section>
+
+<footer>⚜ &nbsp; Built for Manor Lords Beta <span>v8.097</span> &nbsp; ⚜</footer>
+</div>
+
+<script>
+const pannage=document.getElementById('pannage'),pannageNum=document.getElementById('pannageNum'),intervalEl=document.getElementById('interval'),avgEl=document.getElementById('avg'),conservativeEl=document.getElementById('conservative'),goalEl=document.getElementById('goal'),neededEl=document.getElementById('needed'),actualEl=document.getElementById('actual'),tbody=document.getElementById('tbody'),canvas=document.getElementById('chart'),ctx=canvas.getContext('2d');
+function clamp(v,min,max){v=Number(v);if(!Number.isFinite(v))v=min;return Math.max(min,Math.min(max,v))}
+function daysFor(p){return 73/(1+p/100)}
+function avgPork(p){return 2*365/daysFor(p)}
+function conservativePork(p){
+  const completedCycles=Math.floor(365/daysFor(p));
+  return completedCycles*2;
+}
+function renderTable(sel){const base=avgPork(0);let html='';for(let p=0;p<=100;p+=10){const d=daysFor(p),a=avgPork(p),g=a-base,imp=(a/base-1)*100;html+=`<tr class="${Math.round(sel/10)*10===p?'selected':''}"><td>${p}%</td><td>${d.toFixed(2)}</td><td>${a.toFixed(2)}</td><td class="${p===0?'':'positive'}">${p===0?'—':'+'+g.toFixed(2)}</td><td class="${p===0?'':'positive'}">${p===0?'—':'+'+imp.toFixed(1)+'%'}</td></tr>`}tbody.innerHTML=html}
+function drawChart(sel){const r=canvas.getBoundingClientRect(),dpr=window.devicePixelRatio||1;canvas.width=Math.max(1,Math.round(r.width*dpr));canvas.height=Math.max(1,Math.round(r.height*dpr));ctx.setTransform(dpr,0,0,dpr,0,0);const W=r.width,H=r.height,p={l:58,r:24,t:18,b:42},iw=W-p.l-p.r,ih=H-p.t-p.b,yMax=25;ctx.clearRect(0,0,W,H);ctx.font='13px Georgia';ctx.textBaseline='middle';
+for(let yv=0;yv<=25;yv+=5){const y=p.t+ih-(yv/yMax)*ih;ctx.strokeStyle='rgba(101,77,49,.22)';ctx.beginPath();ctx.moveTo(p.l,y);ctx.lineTo(p.l+iw,y);ctx.stroke();ctx.fillStyle='#3b2b1d';ctx.textAlign='right';ctx.fillText(yv,p.l-8,y)}
+for(let xv=0;xv<=100;xv+=20){const x=p.l+(xv/100)*iw;ctx.strokeStyle='rgba(101,77,49,.15)';ctx.beginPath();ctx.moveTo(x,p.t);ctx.lineTo(x,p.t+ih);ctx.stroke();ctx.fillStyle='#3b2b1d';ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText(xv+'%',x,p.t+ih+7)}
+ctx.strokeStyle='#4d2b16';ctx.lineWidth=3;ctx.beginPath();for(let pct=0;pct<=100;pct+=5){const x=p.l+(pct/100)*iw,y=p.t+ih-(avgPork(pct)/yMax)*ih;if(pct===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}ctx.stroke();
+for(let pct=0;pct<=100;pct+=10){const x=p.l+(pct/100)*iw,y=p.t+ih-(avgPork(pct)/yMax)*ih;ctx.fillStyle='#6d371d';ctx.beginPath();ctx.arc(x,y,4.5,0,Math.PI*2);ctx.fill()}
+const sx=p.l+(sel/100)*iw,sy=p.t+ih-(avgPork(sel)/yMax)*ih;ctx.fillStyle='#2f5f2c';ctx.beginPath();ctx.arc(sx,sy,6,0,Math.PI*2);ctx.fill();ctx.fillStyle='#2d2117';ctx.textAlign='center';ctx.font='14px Georgia';ctx.fillText('PANNAGE (WOODLAND) %',p.l+iw/2,H-5)}
+function render(){
+  const pct=clamp(pannage.value,0,100);
+  pannage.value=pct;
+  pannageNum.value=Math.round(pct);
+
+  const d=daysFor(pct);
+  const avg=avgPork(pct);
+  const conservative=conservativePork(pct);
+  const goal=Math.max(1,Number(goalEl.value)||1);
+
+  // Plan against the lower-output year: only whole cycles completed within 365 days count.
+  const need=Math.ceil(goal/conservative);
+  const actual=need*conservative;
+
+  intervalEl.textContent=d.toFixed(2);
+  avgEl.textContent=avg.toFixed(2);
+  conservativeEl.textContent=`Conservative year: ${conservative} pork`;
+  neededEl.textContent=need;
+  actualEl.textContent=`Conservative Production: ${actual} pork/year`;
+
+  renderTable(pct);
+  requestAnimationFrame(()=>drawChart(pct));
+}
+pannage.addEventListener('input',render);pannageNum.addEventListener('input',()=>{pannage.value=clamp(pannageNum.value,0,100);render()});goalEl.addEventListener('input',render);window.addEventListener('resize',render);render();
+</script>
+</body></html>
