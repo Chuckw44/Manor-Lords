@@ -215,8 +215,13 @@ footer{text-align:center;color:#8f8066;font-size:13px;padding:20px 0 5px}
         <div class="strategy">
           <h3>Estimated Annual Output</h3>
           <div class="metrics">
-            <div class="metric"><div class="label">Small Game</div><div id="huntFood" class="value">—</div><div class="unit">food / year</div></div>
-            <div class="metric"><div class="label">Pelts</div><div id="huntPelts" class="value">—</div><div class="unit">pelts / year</div></div>
+            <div class="metric"><div class="label">Active Hunting — Small Game</div><div id="huntActiveGame" class="value">—</div><div class="unit">per year</div></div>
+            <div class="metric"><div class="label">Active Hunting — Pelts</div><div id="huntPelts" class="value">—</div><div class="unit">per year</div></div>
+            <div class="metric"><div class="label">Trapping — Small Game</div><div id="huntTrapping" class="value">—</div><div class="unit">expected / year</div></div>
+          </div>
+          <div class="metrics" style="margin-top:10px">
+            <div class="metric"><div class="label">Total Small Game</div><div id="huntFood" class="value">—</div><div class="unit">hunting + trapping</div></div>
+            <div class="metric"><div class="label">Expected Rabbit Supply</div><div id="huntRabbitSupply" class="value">—</div><div class="unit">spawned / year</div></div>
             <div class="metric"><div class="label">Origin Hunting Modifier</div><div id="huntOriginMod" class="value">1.00×</div><div class="unit" id="huntOriginUnit">none</div></div>
           </div>
         </div>
@@ -224,9 +229,10 @@ footer{text-align:center;color:#8f8066;font-size:13px;padding:20px 0 5px}
           <b>Trapping is intentionally not optimized in this build.</b><br>
           Extra camps can be built for more traps, but that is treated as separate from normal hunting.
         </div>
-        <div class="note warning">
-          The hunting reserve currently uses <b>capacity − 2</b>, matching your observed frequent-spawn setup.
-          Trapping remains excluded from the normal hunting recommendation.
+        <div class="note warning" id="huntAssumptionNote">
+          Hunting is a review-build estimate. Camp count is based on rabbit regeneration versus an editable
+          per-camp hunting-throughput assumption. Trapping currently assumes 3 traps per occupied camp,
+          with each trap checking once every 90 days at the Teeming chance.
         </div>
       </div>
     </div>
@@ -304,9 +310,10 @@ footer{text-align:center;color:#8f8066;font-size:13px;padding:20px 0 5px}
       <b>Fishing:</b> reserve optimization uses the configured spring spawn dates and spawn-growth rate in the GAME settings block.
       Spring staffing uses the configured catch-per-spot rate, uptime, fishing-spot count, and people-per-family values.
       The current catch-per-spot rate is derived from observed results of roughly 146 fish/month from 11 spots and 80 fish/month from 6 spots.<br><br>
-      <b>Hunting:</b> reserve offset, yield ranges, Teeming model, and Origin multipliers are all controlled from the GAME settings block.
-      Vogtland's hound estimate assumes one family per camp,
-      because one hound follows one of two active hunters. Trapping is excluded.<br><br>
+      <b>Hunting:</b> reserve = capacity − 2. Teeming changes rabbit spawning only: each spawn is +1 rabbit with a
+      Woodland-% chance for one extra rabbit. Recommended camps are estimated from sustainable rabbit regeneration versus an
+      editable per-camp hunting-throughput assumption. Active hunting produces equal Small Game and Pelts before Origin bonuses.
+      Trapping is added separately as Small Game only, using the editable assumed trap count and 90-day cycle.<br><br>
       <b>Foraging:</b> season length, growth interval, growth fraction, Teeming bonus, and Vogtland capacity multiplier are all
       controlled from the GAME settings block.
     </div>
@@ -351,26 +358,27 @@ const GAME = {
   hunting: {
     reserveBelowCapacity: 2,
 
+    // Rabbit regeneration
+    spawnThreshold: 31,
+    daysPerYear: 365,
+
+    // Provisional labor assumption used only to recommend camp count.
+    // Keep easy to change after more in-game testing.
+    successfulHuntsPerCampPerYear: 80,
+
+    // Trapping: current observed assumption.
+    // Testers have seen 1-5 traps; 3 per occupied camp is used as the review-build average.
+    assumedTrapsPerCamp: 3,
+    trapCycleDays: 90,
+
     regular: {
       minCapacity: 16,
-      maxCapacity: 18,
-      minFoodYield: 85,
-      maxFoodYield: 103,
-      minPeltYield: 73,
-      maxPeltYield: 91
+      maxCapacity: 18
     },
 
     rich: {
       minCapacity: 26,
-      maxCapacity: 28,
-      foodYield: 134,
-      peltYield: 122
-    },
-
-    teeming: {
-      // Expected-model assumption used in this review build:
-      // Woodland % acts like an expected multiplier on sustainable animal availability.
-      multiplierFromWoodland: true
+      maxCapacity: 28
     }
   },
 
@@ -497,40 +505,43 @@ function renderFishing(){
 function lerp(a,b,t){return a+(b-a)*Math.max(0,Math.min(1,t));}
 
 function renderHunting(){
-  const rich=$('huntRich').value==='rich';
   const cap=Math.max(1,Math.floor(Number($('rabbitCap').value)||1));
   const w=Number($('huntWoodland').value)/100;
   const origin=getOrigin();
   $('huntWoodlandValue').textContent=Math.round(w*100)+'%';
 
-  // Empirical annual ranges supplied by the user, interpolated by actual node cap.
-  let baseFood,basePelts,capMin,capMax;
-  if(rich){
-    capMin=GAME.hunting.rich.minCapacity;
-    capMax=GAME.hunting.rich.maxCapacity;
-    baseFood=GAME.hunting.rich.foodYield;
-    basePelts=GAME.hunting.rich.peltYield;
-  }else{
-    capMin=GAME.hunting.regular.minCapacity;
-    capMax=GAME.hunting.regular.maxCapacity;
-    const t=(cap-capMin)/(capMax-capMin || 1);
-    baseFood=lerp(GAME.hunting.regular.minFoodYield,GAME.hunting.regular.maxFoodYield,t);
-    basePelts=lerp(GAME.hunting.regular.minPeltYield,GAME.hunting.regular.maxPeltYield,t);
-  }
+  // Recommended reserve: capacity - 2.
+  const reserve=Math.max(1,cap-GAME.hunting.reserveBelowCapacity);
 
-  // Teeming: extra-offspring chance equals Woodland Environment.
-  // For this review build we model its effect as an expected multiplier on
-  // sustainable animal availability. This is deliberately marked as an estimate.
-  const teemingMultiplier=1+w;
-  let food=baseFood*teemingMultiplier;
-  let pelts=basePelts*teemingMultiplier;
+  // Rabbit spawn mechanic:
+  // daily uptick = current rabbits / 2
+  // spawn after the counter passes the configured threshold
+  // each spawn gives +1 rabbit, with Teeming chance for +1 extra.
+  const dailyUptick=reserve/2;
+  const spawnDays=Math.max(1,Math.ceil(GAME.hunting.spawnThreshold/dailyUptick));
+  const spawnEventsPerYear=GAME.hunting.daysPerYear/spawnDays;
+  const rabbitsPerSpawn=1+w;
+  const expectedRabbitSupply=spawnEventsPerYear*rabbitsPerSpawn;
 
-  // Origin hunting output.
-  // Born of the Alps: assumed 1.5x expected output per successful hunt.
-  // Vogtland: 1 hound per camp, 1 family per camp, 2 active hunters/family.
-  // Assuming equal hunts, the hound assists about half of successful hunts -> ~1.5x.
+  // Recommend enough one-family camps to have a reasonable chance to harvest
+  // the regenerated rabbits without assuming Teeming is direct production.
+  const camps=Math.max(
+    1,
+    Math.ceil(expectedRabbitSupply/GAME.hunting.successfulHuntsPerCampPerYear)
+  );
+  const families=camps; // preferred setup: 1 family per camp
+
+  // Active hunting is limited by either rabbit supply or the combined throughput
+  // of the recommended occupied camps.
+  const activeSuccessfulHunts=Math.min(
+    expectedRabbitSupply,
+    camps*GAME.hunting.successfulHuntsPerCampPerYear
+  );
+
+  // Origin output modifier applies to successful active hunts, not rabbit spawning.
   let originMultiplier=1;
   let originUnit='none';
+
   if(origin==='alps'){
     originMultiplier=GAME.origins.alps.huntingOutputMultiplier;
     originUnit='Alps efficiency';
@@ -538,28 +549,54 @@ function renderHunting(){
     originMultiplier=GAME.origins.vogtland.huntingHoundEstimatedMultiplier;
     originUnit='hound estimate';
   }
-  food*=originMultiplier;
-  pelts*=originMultiplier;
 
-  $('huntReserve').textContent=Math.max(1,cap-GAME.hunting.reserveBelowCapacity);
-  $('huntFamilies').textContent=1;
-  $('huntCamps').textContent=1;
-  $('huntFood').textContent=Math.round(food);
+  // A successful active hunt produces Small Game and a Pelt together.
+  const activeGame=activeSuccessfulHunts*originMultiplier;
+  const pelts=activeSuccessfulHunts*originMultiplier;
+
+  // Trapping is separate and produces Small Game only.
+  // Current review assumption: average 3 traps per occupied camp.
+  // Each trap checks every 90 days and succeeds at the Teeming probability.
+  const trapCycles=GAME.hunting.daysPerYear/GAME.hunting.trapCycleDays;
+  const trappingGame=
+    camps *
+    GAME.hunting.assumedTrapsPerCamp *
+    trapCycles *
+    w;
+
+  const totalGame=activeGame+trappingGame;
+
+  $('huntReserve').textContent=reserve;
+  $('huntFamilies').textContent=families;
+  $('huntCamps').textContent=camps;
+
+  $('huntActiveGame').textContent=Math.round(activeGame);
   $('huntPelts').textContent=Math.round(pelts);
+  $('huntTrapping').textContent=Math.round(trappingGame);
+  $('huntFood').textContent=Math.round(totalGame);
+  $('huntRabbitSupply').textContent=Math.round(expectedRabbitSupply);
+
   $('huntOriginMod').textContent=originMultiplier.toFixed(2)+'×';
   $('huntOriginUnit').textContent=originUnit;
 
   if(origin==='vogtland'){
     $('houndNote').innerHTML=
-      '<b>Vogtland hound estimate:</b> assumes 1 family per camp, 2 active hunters per family, '+
-      '1 hound per camp, and an even split of successful hunts between father and son. '+
-      'The hound therefore affects about half of successful hunts. Actual results may vary.<br><br>'+
-      '<b>Trapping is not optimized in this build.</b>';
+      `<b>Vogtland hound estimate:</b> assumes 1 family per camp, 2 active hunters per family, `+
+      `1 hound per camp, and an even split of successful hunts between father and son. `+
+      `The hound therefore affects about half of successful hunts. Actual results may vary.<br><br>`+
+      `<b>Rabbit spawn estimate:</b> reserve ${reserve}, about one spawn every ${spawnDays} days, `+
+      `${Math.round(w*100)}% Teeming.`;
   }else{
     $('houndNote').innerHTML=
-      '<b>Trapping is intentionally not optimized in this build.</b><br>'+
-      'Extra camps can be built for more traps, but that is treated separately from normal hunting.';
+      `<b>Rabbit spawn estimate:</b> reserve ${reserve}, about one spawn every ${spawnDays} days, `+
+      `${Math.round(w*100)}% Teeming. `+
+      `The planner recommends ${camps} occupied camp${camps===1?'':'s'} at 1 family per camp.`;
   }
+
+  $('huntAssumptionNote').innerHTML=
+    `Review-build assumptions: <b>${GAME.hunting.successfulHuntsPerCampPerYear}</b> successful hunts per occupied camp/year `+
+    `for staffing purposes; <b>${GAME.hunting.assumedTrapsPerCamp}</b> average traps per occupied camp; `+
+    `one trap cycle every <b>${GAME.hunting.trapCycleDays}</b> days; trapping produces Small Game only, not Pelts.`;
 }
 
 // ---------- Foraging ----------
