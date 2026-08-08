@@ -132,8 +132,9 @@ footer{text-align:center;color:#8f8066;font-size:13px;padding:20px 0 5px}
             <input id="fishCap" type="number" min="2" step="1" value="354">
           </div>        </div>
         <div class="note">
-          Fishing labor is estimated at <span id="fishUptimeNote">90%</span> uptime. A family has 3 people, so the planner recommends
-          enough families to keep roughly 90% of the available fishing spots occupied during spring.
+          Fishing labor is estimated at <span id="fishUptimeNote">90%</span> uptime. The planner uses
+          <span id="fishSpotRateNote">13.3</span> fish per occupied fishing spot per month, based on observed results of
+          about 146 fish/month from 11 spots and about 80 fish/month from 6 spots.
         </div>
       </div>
 
@@ -146,7 +147,7 @@ footer{text-align:center;color:#8f8066;font-size:13px;padding:20px 0 5px}
         </div>
         <div class="metrics" style="margin-top:10px">
           <div class="metric"><div class="label">Expected Annual Yield</div><div id="fishAnnual" class="value">—</div><div class="unit">fish / year</div></div>
-          <div class="metric"><div class="label">Fishing Spots</div><div id="fishSpots" class="value">—</div><div class="unit">individual spots</div></div>
+          <div class="metric"><div class="label">Practical Catch Capacity</div><div id="fishMonthlyCapacity" class="value">—</div><div class="unit">fish / month</div></div>
           <div class="metric"><div class="label">Spring Uptime</div><div id="fishUptimeMetric" class="value">90%</div><div class="unit">assumed</div></div>
         </div>
 
@@ -301,7 +302,8 @@ footer{text-align:center;color:#8f8066;font-size:13px;padding:20px 0 5px}
     <div class="section-title">Review Build — Assumptions to Check</div>
     <div class="compact">
       <b>Fishing:</b> reserve optimization uses the configured spring spawn dates and spawn-growth rate in the GAME settings block.
-      Spring staffing uses the configured uptime and people-per-family values; it does not assume a fixed catch rate.<br><br>
+      Spring staffing uses the configured catch-per-spot rate, uptime, fishing-spot count, and people-per-family values.
+      The current catch-per-spot rate is derived from observed results of roughly 146 fish/month from 11 spots and 80 fish/month from 6 spots.<br><br>
       <b>Hunting:</b> reserve offset, yield ranges, Teeming model, and Origin multipliers are all controlled from the GAME settings block.
       Vogtland's hound estimate assumes one family per camp,
       because one hound follows one of two active hunters. Trapping is excluded.<br><br>
@@ -340,6 +342,7 @@ const GAME = {
     pondSpots: 11,
     riverSpots: 6,
     peoplePerFamily: 3,
+    catchPerSpotPerMonth: 13.3,
     assumedUptime: 0.90,
     spawnGrowthRate: 0.40,
     spawnDates: ['March 1','April 1','May 1']
@@ -439,21 +442,30 @@ function renderFishing(){
   const type=$('fishType').value;
   const spots=type==='pond'?GAME.fishing.pondSpots:GAME.fishing.riverSpots;
   const best=bestFishReserve(cap);
-  $('fishUptimeMetric').textContent=Math.round(GAME.fishing.assumedUptime*100)+'%';
-  $('fishUptimeNote').textContent=Math.round(GAME.fishing.assumedUptime*100)+'%';
 
   $('fishReserve').textContent=best.reserve;
   $('fishAnnual').textContent=best.yield;
-  $('fishSpots').textContent=spots;
+  $('fishUptimeMetric').textContent=Math.round(GAME.fishing.assumedUptime*100)+'%';
+  $('fishUptimeNote').textContent=Math.round(GAME.fishing.assumedUptime*100)+'%';
+  $('fishSpotRateNote').textContent=GAME.fishing.catchPerSpotPerMonth.toFixed(1);
 
-  // Staffing is based on fishing spots, 3 people per family, and 90% uptime.
-  // This aims to keep about 90% of all fishing spots actively occupied.
-  const uptime=GAME.fishing.assumedUptime;
-  const peoplePerFamily=GAME.fishing.peoplePerFamily;
-  const springFamilies=Math.ceil((spots*uptime)/peoplePerFamily);
+  const practicalCatchPerSpotPerMonth =
+    GAME.fishing.catchPerSpotPerMonth * GAME.fishing.assumedUptime;
 
-  // Outside the three spring spawn windows, regeneration stops.
-  // Keep one family available for continued harvest, but move the rest elsewhere.
+  const fullNodeMonthlyCapacity = spots * practicalCatchPerSpotPerMonth;
+  $('fishMonthlyCapacity').textContent=Math.round(fullNodeMonthlyCapacity);
+
+  const maxSpringHarvestNeeded=Math.max(...best.rows.map(r=>r.caught));
+
+  const spotsNeeded=Math.max(
+    1,
+    Math.min(
+      spots,
+      Math.ceil(maxSpringHarvestNeeded / practicalCatchPerSpotPerMonth)
+    )
+  );
+
+  const springFamilies=Math.ceil(spotsNeeded / GAME.fishing.peoplePerFamily);
   const summerFamilies=best.yield>0?1:0;
   const autumnFamilies=best.yield>0?1:0;
 
@@ -465,10 +477,14 @@ function renderFishing(){
   $('fishBuildings').textContent=huts;
   $('fishFamiliesCard').textContent=`${springFamilies} / 1`;
 
-  const effectiveFishers=(springFamilies*peoplePerFamily*uptime).toFixed(1);
+  const occupiedSpots=Math.min(spots,springFamilies*GAME.fishing.peoplePerFamily);
+  const springMonthlyCapacity=occupiedSpots*practicalCatchPerSpotPerMonth;
+
   $('fishHuts').innerHTML=
     `<b>${huts} fishing hut${huts===1?'':'s'}</b> with <b>${springFamilies} famil${springFamilies===1?'y':'ies'}</b> `+
-    `during spring gives about <b>${effectiveFishers} active fishers</b> at 90% uptime across ${spots} fishing spots. `+
+    `provides up to about <b>${Math.round(springMonthlyCapacity)} fish/month</b> of practical spring catch capacity `+
+    `at ${Math.round(GAME.fishing.assumedUptime*100)}% uptime. `+
+    `The largest one-month spring harvest target in this setup is <b>${maxSpringHarvestNeeded}</b> fish. `+
     `After the May spawn, drop to 1 family unless you specifically need faster harvesting.`;
 
   const names=GAME.fishing.spawnDates;
