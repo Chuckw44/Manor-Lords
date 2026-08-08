@@ -1,0 +1,589 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fishing, Hunting & Foraging Planner — Manor Lords</title>
+<style>
+:root{
+  --bg:#081116; --panel:#10191d; --panel2:#121e22; --line:#65502d;
+  --gold:#d5aa56; --gold2:#f2d9a3; --text:#efe6d1; --muted:#c4b594;
+  --green:#90b74a; --amber:#d7a044; --red:#a15a4a;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:#071015;color:var(--text);font-family:Georgia,"Times New Roman",serif}
+body{min-height:100vh;padding:18px;background:radial-gradient(circle at 70% 0%,rgba(150,111,51,.09),transparent 38%),linear-gradient(180deg,#091318,#071015)}
+.app{max-width:1380px;margin:auto}
+.topbar{display:grid;grid-template-columns:270px 1fr 140px;gap:18px;align-items:center;margin-bottom:15px}
+.brand{display:flex;gap:12px;align-items:center}
+.brand-mark{width:66px;height:66px;border:2px solid var(--gold);border-radius:50%;display:grid;place-items:center;color:var(--gold);font-size:30px}
+.brand strong{display:block;font-size:24px;letter-spacing:.05em}
+.brand span{display:block;color:var(--gold);font-size:13px;letter-spacing:.13em;margin-top:3px}
+.title{text-align:center}
+.title h1{margin:0;font-size:45px;font-weight:500;letter-spacing:.02em}
+.title .rule{height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:8px auto;width:72%}
+.title p{margin:0;color:var(--muted);font-style:italic;font-size:17px}
+.home{justify-self:end;text-decoration:none;color:var(--text);border:1px solid var(--line);padding:10px 17px;border-radius:5px;background:linear-gradient(#151e20,#0b1316)}
+.panel{background:linear-gradient(180deg,rgba(20,31,35,.98),rgba(11,20,24,.98));border:1px solid var(--line);border-radius:6px}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.tab{border:1px solid var(--line);background:#0e171a;color:var(--text);padding:14px 12px;font:18px Georgia;border-radius:5px;cursor:pointer}
+.tab.active{background:linear-gradient(180deg,#2f4920,#1b3019);border-color:#8aa34b;color:#f3e8cb}
+.content{display:none}
+.content.active{display:block}
+.grid{display:grid;grid-template-columns:1.05fr 1fr;gap:12px}
+.controls,.results,.notes{padding:17px}
+.section-title{font-size:19px;border-bottom:1px solid var(--line);padding-bottom:9px;margin-bottom:14px}
+.control-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+label{display:block;font-size:14px;color:var(--muted);margin-bottom:5px}
+select,input[type=number],input[type=range]{
+  width:100%;background:#101719;color:var(--text);border:1px solid #6b5734;border-radius:5px;padding:11px 12px;font:18px Georgia
+}
+.range-row{display:grid;grid-template-columns:1fr 90px;gap:10px;align-items:center}
+.range-value{border:1px solid var(--line);padding:10px;text-align:center;border-radius:5px;background:#0d1518;font-size:23px}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.metric{border:1px solid rgba(115,92,49,.55);border-radius:5px;padding:13px;text-align:center;background:rgba(255,255,255,.015)}
+.metric .label{font-size:13px;color:var(--muted)}
+.metric .value{font-size:30px;color:var(--green);margin-top:4px}
+.metric .unit{font-size:13px;color:var(--gold2);margin-top:2px}
+.strategy{margin-top:12px;border:1px solid rgba(115,92,49,.55);padding:13px;border-radius:5px}
+.strategy h3{margin:0 0 9px;font-size:17px}
+.season-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.season{border:1px solid rgba(115,92,49,.4);padding:10px;text-align:center}
+.season strong{display:block;font-size:23px;color:var(--gold2);margin-top:4px}
+.note{color:var(--muted);font-style:italic;font-size:13px;line-height:1.45;margin-top:10px}
+.warning{color:#e5b868}
+.good{color:var(--green)}
+table{width:100%;border-collapse:collapse;margin-top:10px;font-size:14px}
+th,td{border:1px solid rgba(115,92,49,.45);padding:8px;text-align:center}
+th{font-weight:500}
+.compact{font-size:14px;line-height:1.5;color:var(--muted)}
+.callout{margin-top:12px;border-left:3px solid var(--gold);padding:10px 12px;background:rgba(211,166,78,.05)}
+footer{text-align:center;color:#8f8066;font-size:13px;padding:20px 0 5px}
+@media(max-width:900px){
+  .topbar{grid-template-columns:1fr}.brand,.home{justify-self:center}.title h1{font-size:36px}
+  .grid{grid-template-columns:1fr}
+}
+@media(max-width:650px){
+  body{padding:8px}.tabs,.control-grid,.metrics,.season-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark">⚜</div>
+      <div><strong>MANOR LORDS</strong><span>COMMUNITY TOOLS</span></div>
+    </div>
+    <div class="title">
+      <h1>FISHING, HUNTING &amp; FORAGING PLANNER</h1>
+      <div class="rule"></div>
+      <p>Plan sustainable use of your region's wild resources</p>
+    </div>
+    <a class="home" href="../">⌂ HOME</a>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="fishing">Fishing</button>
+    <button class="tab" data-tab="hunting">Hunting</button>
+    <button class="tab" data-tab="foraging">Foraging</button>
+  </div>
+
+  <div class="panel controls" style="margin-bottom:12px">
+    <div class="control-grid">
+      <div>
+        <label for="origin">Origin</label>
+        <select id="origin">
+          <option value="none">None / Other Origin</option>
+          <option value="alps">Born of the Alps</option>
+          <option value="vogtland">Of the Vogtland</option>
+        </select>
+      </div>
+      <div>
+        <label>Recommended Origin to Maximize Natural Resources</label>
+        <div id="originRecommendation" class="range-value" style="font-size:18px">Of the Vogtland</div>
+      </div>
+    </div>
+    <div id="originNote" class="note"></div>
+  </div>
+
+  <!-- FISHING -->
+  <section id="fishing" class="content active">
+    <div class="grid">
+      <div class="panel controls">
+        <div class="section-title">Fishing Node</div>
+        <div class="control-grid">
+          <div>
+            <label for="fishType">Node type</label>
+            <select id="fishType">
+              <option value="pond">Pond</option>
+              <option value="river">River / Lake</option>
+            </select>
+          </div>
+          <div>
+            <label for="fishSpecies">Fish</label>
+            <select id="fishSpecies">
+              <option value="carp">Carp</option>
+              <option value="eel">Eel</option>
+            </select>
+          </div>
+          <div>
+            <label for="fishCap">Node capacity</label>
+            <input id="fishCap" type="number" min="2" step="1" value="354">
+          </div>        </div>
+        <div class="note">
+          Fishing labor is estimated at <span id="fishUptimeNote">90%</span> uptime. A family has 3 people, so the planner recommends
+          enough families to keep roughly 90% of the available fishing spots occupied during spring.
+        </div>
+      </div>
+
+      <div class="panel results">
+        <div class="section-title">Maximum Sustainable Yield</div>
+        <div class="metrics">
+          <div class="metric"><div class="label">Buildings</div><div id="fishBuildings" class="value">—</div><div class="unit">fishing huts</div></div>
+          <div class="metric"><div class="label">Families</div><div id="fishFamiliesCard" class="value">—</div><div class="unit">spring / later</div></div>
+          <div class="metric"><div class="label">Best Setting</div><div id="fishReserve" class="value">—</div><div class="unit">reserve</div></div>
+        </div>
+        <div class="metrics" style="margin-top:10px">
+          <div class="metric"><div class="label">Expected Annual Yield</div><div id="fishAnnual" class="value">—</div><div class="unit">fish / year</div></div>
+          <div class="metric"><div class="label">Fishing Spots</div><div id="fishSpots" class="value">—</div><div class="unit">individual spots</div></div>
+          <div class="metric"><div class="label">Spring Uptime</div><div id="fishUptimeMetric" class="value">90%</div><div class="unit">assumed</div></div>
+        </div>
+
+        <div class="strategy">
+          <h3>Recommended Staffing</h3>
+          <div class="season-grid">
+            <div class="season">Spring<strong id="fishSpring">—</strong>families</div>
+            <div class="season">Summer<strong id="fishSummer">—</strong>families</div>
+            <div class="season">Autumn<strong id="fishAutumn">—</strong>families</div>
+            <div class="season">Winter<strong>0</strong>families</div>
+          </div>
+          <div class="callout" id="fishHuts"></div>
+        </div>
+
+        <table>
+          <thead><tr><th>Spawn</th><th>Start</th><th>After +40%</th><th>Harvest to Reserve</th></tr></thead>
+          <tbody id="fishTable"></tbody>
+        </table>
+        <div class="note">
+          Fish reproduce only on March 1, April 1 and May 1. Each spawn adds 40% of the current stock,
+          rounded up, up to the node's cap. The planner searches every possible reserve and chooses the
+          one that gives the greatest repeatable annual harvest.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HUNTING -->
+  <section id="hunting" class="content">
+    <div class="grid">
+      <div class="panel controls">
+        <div class="section-title">Rabbit Node</div>
+        <div class="control-grid">
+          <div>
+            <label for="huntRich">Resource quality</label>
+            <select id="huntRich">
+              <option value="regular">Regular</option>
+              <option value="rich">Rich</option>
+            </select>
+          </div>
+          <div>
+            <label for="rabbitCap">Rabbit capacity</label>
+            <input id="rabbitCap" type="number" min="1" step="1" value="18">
+          </div>
+        </div>
+        <div style="margin-top:14px">
+          <label for="huntWoodland">Woodland Environment / Teeming chance</label>
+          <div class="range-row">
+            <input id="huntWoodland" type="range" min="0" max="100" step="1" value="50">
+            <div id="huntWoodlandValue" class="range-value">50%</div>
+          </div>
+        </div>
+        <div class="note">
+          Teeming gives wild animals a chance equal to Woodland Environment to produce two offspring instead of one.
+        </div>
+      </div>
+
+      <div class="panel results">
+        <div class="section-title">Recommended Hunting Setup</div>
+        <div class="metrics">
+          <div class="metric"><div class="label">Buildings</div><div id="huntCamps" class="value">1</div><div class="unit">hunting camp</div></div>
+          <div class="metric"><div class="label">Families</div><div id="huntFamilies" class="value">1</div><div class="unit">1 per camp</div></div>
+          <div class="metric"><div class="label">Best Setting</div><div id="huntReserve" class="value">—</div><div class="unit">reserve</div></div>
+        </div>
+        <div class="strategy">
+          <h3>Estimated Annual Output</h3>
+          <div class="metrics">
+            <div class="metric"><div class="label">Small Game</div><div id="huntFood" class="value">—</div><div class="unit">food / year</div></div>
+            <div class="metric"><div class="label">Pelts</div><div id="huntPelts" class="value">—</div><div class="unit">pelts / year</div></div>
+            <div class="metric"><div class="label">Origin Hunting Modifier</div><div id="huntOriginMod" class="value">1.00×</div><div class="unit" id="huntOriginUnit">none</div></div>
+          </div>
+        </div>
+        <div class="callout" id="houndNote">
+          <b>Trapping is intentionally not optimized in this build.</b><br>
+          Extra camps can be built for more traps, but that is treated as separate from normal hunting.
+        </div>
+        <div class="note warning">
+          The hunting reserve currently uses <b>capacity − 2</b>, matching your observed frequent-spawn setup.
+          Trapping remains excluded from the normal hunting recommendation.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FORAGING -->
+  <section id="foraging" class="content">
+    <div class="grid">
+      <div class="panel controls">
+        <div class="section-title">Foraging Node</div>
+        <div class="control-grid">
+          <div>
+            <label for="forageType">Resource</label>
+            <select id="forageType">
+              <option value="berries">Berries</option>
+              <option value="mushrooms">Mushrooms</option>
+            </select>
+          </div>
+          <div>
+            <label for="forageCap">Node capacity</label>
+            <input id="forageCap" type="number" min="1" step="1" value="65">
+          </div>
+        </div>
+        <div style="margin-top:14px">
+          <label for="forageWoodland">Woodland Environment / Teeming chance</label>
+          <div class="range-row">
+            <input id="forageWoodland" type="range" min="0" max="100" step="1" value="50">
+            <div id="forageWoodlandValue" class="range-value">50%</div>
+          </div>
+        </div>
+        <div class="note">
+          Foraging growth: 1/9 of capacity every 10 days for 180 days. Teeming adds a chance for +1 additional
+          resource per growth event, equal to Woodland Environment.
+        </div>
+      </div>
+
+      <div class="panel results">
+        <div class="section-title">Expected Foraging Yield</div>
+        <div class="metrics">
+          <div class="metric"><div class="label">Buildings</div><div class="value">1</div><div class="unit">forager hut</div></div>
+          <div class="metric"><div class="label">Families</div><div class="value">1+</div><div class="unit">seasonal</div></div>
+          <div class="metric"><div class="label">Effective Capacity</div><div id="forageEffectiveCap" class="value">—</div><div class="unit">after Origin</div></div>
+        </div>
+        <div class="metrics" style="margin-top:10px">
+          <div class="metric"><div class="label">Base Annual Growth</div><div id="forageBase" class="value">—</div><div class="unit">resources / year</div></div>
+          <div class="metric"><div class="label">Teeming Bonus</div><div id="forageBonus" class="value">—</div><div class="unit">expected / year</div></div>
+          <div class="metric"><div class="label">Expected Annual Yield</div><div id="forageTotal" class="value">—</div><div class="unit">resources / year</div></div>
+        </div>
+
+        <div class="strategy">
+          <h3>Recommended Staffing</h3>
+          <div class="season-grid">
+            <div class="season">Spring<strong>1</strong>family+</div>
+            <div class="season">Summer<strong>1</strong>family+</div>
+            <div class="season">Autumn<strong>1</strong>family+</div>
+            <div class="season">Winter<strong>0</strong>families</div>
+          </div>
+          <div class="callout">
+            Keep at least <b>1 family</b> assigned while you want herb production. Add seasonal families only if your
+            gatherers are failing to clear the node before additional growth is wasted.
+          </div>
+        </div>
+
+        <table>
+          <thead><tr><th>Growth Events</th><th>Average Base / Event</th><th>Teeming Chance</th></tr></thead>
+          <tbody><tr><td>18</td><td id="foragePerTick">—</td><td id="forageChance">—</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <div class="panel notes" style="margin-top:12px">
+    <div class="section-title">Review Build — Assumptions to Check</div>
+    <div class="compact">
+      <b>Fishing:</b> reserve optimization uses the configured spring spawn dates and spawn-growth rate in the GAME settings block.
+      Spring staffing uses the configured uptime and people-per-family values; it does not assume a fixed catch rate.<br><br>
+      <b>Hunting:</b> reserve offset, yield ranges, Teeming model, and Origin multipliers are all controlled from the GAME settings block.
+      Vogtland's hound estimate assumes one family per camp,
+      because one hound follows one of two active hunters. Trapping is excluded.<br><br>
+      <b>Foraging:</b> season length, growth interval, growth fraction, Teeming bonus, and Vogtland capacity multiplier are all
+      controlled from the GAME settings block.
+    </div>
+  </div>
+
+  <div class="panel notes" style="margin-top:12px">
+    <div class="section-title">Easy Balance Updates</div>
+    <div class="compact">
+      All editable game-mechanic values are grouped together near the top of the JavaScript in a single
+      <b>GAME / PLANNER SETTINGS</b> section. Normally, balance changes should only require edits there.
+    </div>
+  </div>
+
+  <footer>
+    <strong>Unofficial Manor Lords Fan Tool</strong><br>
+    Not affiliated with or endorsed by Slavic Magic or Hooded Horse.<br>
+    All calculations are based on publicly available game mechanics and community research.<br><br>
+    Prototype — Fishing, Hunting &amp; Foraging Planner
+  </footer>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+
+// ============================================================
+// GAME / PLANNER SETTINGS
+// Edit values in THIS section when Manor Lords balance changes.
+// The rest of the planner reads from these values automatically.
+// ============================================================
+
+const GAME = {
+  fishing: {
+    pondSpots: 11,
+    riverSpots: 6,
+    peoplePerFamily: 3,
+    assumedUptime: 0.90,
+    spawnGrowthRate: 0.40,
+    spawnDates: ['March 1','April 1','May 1']
+  },
+
+  hunting: {
+    reserveBelowCapacity: 2,
+
+    regular: {
+      minCapacity: 16,
+      maxCapacity: 18,
+      minFoodYield: 85,
+      maxFoodYield: 103,
+      minPeltYield: 73,
+      maxPeltYield: 91
+    },
+
+    rich: {
+      minCapacity: 26,
+      maxCapacity: 28,
+      foodYield: 134,
+      peltYield: 122
+    },
+
+    teeming: {
+      // Expected-model assumption used in this review build:
+      // Woodland % acts like an expected multiplier on sustainable animal availability.
+      multiplierFromWoodland: true
+    }
+  },
+
+  foraging: {
+    growthSeasonDays: 180,
+    growthIntervalDays: 10,
+    growthFractionOfCapacity: 1/9,
+    teemingExtraPerGrowthEvent: 1
+  },
+
+  origins: {
+    alps: {
+      huntingOutputMultiplier: 1.5
+    },
+    vogtland: {
+      huntingHoundEstimatedMultiplier: 1.5,
+      forageCapacityMultiplier: 2
+    }
+  }
+};
+
+
+document.querySelectorAll('.tab').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.content').forEach(x=>x.classList.remove('active'));
+    btn.classList.add('active');
+    $(btn.dataset.tab).classList.add('active');
+  });
+});
+
+
+function getOrigin(){ return $('origin').value; }
+
+function renderOriginRecommendation(){
+  // Within the scope of THIS planner only:
+  // Vogtland always doubles berries/mushrooms, which every region has.
+  // For hunting, current model treats Alps and Vogtland as roughly equal (~1.5x)
+  // when camps are staffed with one family each.
+  $('originRecommendation').textContent='Of the Vogtland';
+  $('originNote').innerHTML=
+    '<b>Scope:</b> recommendation considers only fishing, hunting and foraging. '+
+    'Trade, farming, military and other Origin effects are intentionally ignored.';
+}
+
+// ---------- Fishing ----------
+function bestFishReserve(cap){
+  let best={reserve:1,yield:-1,rows:[]};
+  for(let r=1;r<cap;r++){
+    let stock=r, total=0, rows=[];
+    for(let i=0;i<3;i++){
+      const start=stock;
+      stock=Math.min(cap, stock + Math.ceil(stock*GAME.fishing.spawnGrowthRate));
+      const after=stock;
+      const caught=Math.max(0,after-r);
+      total+=caught;
+      rows.push({start,after,caught});
+      stock=r;
+    }
+    if(total>best.yield || (total===best.yield && r>best.reserve)){
+      best={reserve:r,yield:total,rows};
+    }
+  }
+  return best;
+}
+
+function renderFishing(){
+  const cap=Math.max(2,Math.floor(Number($('fishCap').value)||2));
+  const type=$('fishType').value;
+  const spots=type==='pond'?GAME.fishing.pondSpots:GAME.fishing.riverSpots;
+  const best=bestFishReserve(cap);
+  $('fishUptimeMetric').textContent=Math.round(GAME.fishing.assumedUptime*100)+'%';
+  $('fishUptimeNote').textContent=Math.round(GAME.fishing.assumedUptime*100)+'%';
+
+  $('fishReserve').textContent=best.reserve;
+  $('fishAnnual').textContent=best.yield;
+  $('fishSpots').textContent=spots;
+
+  // Staffing is based on fishing spots, 3 people per family, and 90% uptime.
+  // This aims to keep about 90% of all fishing spots actively occupied.
+  const uptime=GAME.fishing.assumedUptime;
+  const peoplePerFamily=GAME.fishing.peoplePerFamily;
+  const springFamilies=Math.ceil((spots*uptime)/peoplePerFamily);
+
+  // Outside the three spring spawn windows, regeneration stops.
+  // Keep one family available for continued harvest, but move the rest elsewhere.
+  const summerFamilies=best.yield>0?1:0;
+  const autumnFamilies=best.yield>0?1:0;
+
+  $('fishSpring').textContent=springFamilies;
+  $('fishSummer').textContent=summerFamilies;
+  $('fishAutumn').textContent=autumnFamilies;
+
+  const huts=Math.ceil(springFamilies/3);
+  $('fishBuildings').textContent=huts;
+  $('fishFamiliesCard').textContent=`${springFamilies} / 1`;
+
+  const effectiveFishers=(springFamilies*peoplePerFamily*uptime).toFixed(1);
+  $('fishHuts').innerHTML=
+    `<b>${huts} fishing hut${huts===1?'':'s'}</b> with <b>${springFamilies} famil${springFamilies===1?'y':'ies'}</b> `+
+    `during spring gives about <b>${effectiveFishers} active fishers</b> at 90% uptime across ${spots} fishing spots. `+
+    `After the May spawn, drop to 1 family unless you specifically need faster harvesting.`;
+
+  const names=GAME.fishing.spawnDates;
+  $('fishTable').innerHTML=best.rows.map((r,i)=>
+    `<tr><td>${names[i]}</td><td>${r.start}</td><td>${r.after}</td><td>${r.caught}</td></tr>`
+  ).join('');
+}
+
+// ---------- Hunting ----------
+function lerp(a,b,t){return a+(b-a)*Math.max(0,Math.min(1,t));}
+
+function renderHunting(){
+  const rich=$('huntRich').value==='rich';
+  const cap=Math.max(1,Math.floor(Number($('rabbitCap').value)||1));
+  const w=Number($('huntWoodland').value)/100;
+  const origin=getOrigin();
+  $('huntWoodlandValue').textContent=Math.round(w*100)+'%';
+
+  // Empirical annual ranges supplied by the user, interpolated by actual node cap.
+  let baseFood,basePelts,capMin,capMax;
+  if(rich){
+    capMin=GAME.hunting.rich.minCapacity;
+    capMax=GAME.hunting.rich.maxCapacity;
+    baseFood=GAME.hunting.rich.foodYield;
+    basePelts=GAME.hunting.rich.peltYield;
+  }else{
+    capMin=GAME.hunting.regular.minCapacity;
+    capMax=GAME.hunting.regular.maxCapacity;
+    const t=(cap-capMin)/(capMax-capMin || 1);
+    baseFood=lerp(GAME.hunting.regular.minFoodYield,GAME.hunting.regular.maxFoodYield,t);
+    basePelts=lerp(GAME.hunting.regular.minPeltYield,GAME.hunting.regular.maxPeltYield,t);
+  }
+
+  // Teeming: extra-offspring chance equals Woodland Environment.
+  // For this review build we model its effect as an expected multiplier on
+  // sustainable animal availability. This is deliberately marked as an estimate.
+  const teemingMultiplier=1+w;
+  let food=baseFood*teemingMultiplier;
+  let pelts=basePelts*teemingMultiplier;
+
+  // Origin hunting output.
+  // Born of the Alps: assumed 1.5x expected output per successful hunt.
+  // Vogtland: 1 hound per camp, 1 family per camp, 2 active hunters/family.
+  // Assuming equal hunts, the hound assists about half of successful hunts -> ~1.5x.
+  let originMultiplier=1;
+  let originUnit='none';
+  if(origin==='alps'){
+    originMultiplier=GAME.origins.alps.huntingOutputMultiplier;
+    originUnit='Alps efficiency';
+  }else if(origin==='vogtland'){
+    originMultiplier=GAME.origins.vogtland.huntingHoundEstimatedMultiplier;
+    originUnit='hound estimate';
+  }
+  food*=originMultiplier;
+  pelts*=originMultiplier;
+
+  $('huntReserve').textContent=Math.max(1,cap-GAME.hunting.reserveBelowCapacity);
+  $('huntFamilies').textContent=1;
+  $('huntCamps').textContent=1;
+  $('huntFood').textContent=Math.round(food);
+  $('huntPelts').textContent=Math.round(pelts);
+  $('huntOriginMod').textContent=originMultiplier.toFixed(2)+'×';
+  $('huntOriginUnit').textContent=originUnit;
+
+  if(origin==='vogtland'){
+    $('houndNote').innerHTML=
+      '<b>Vogtland hound estimate:</b> assumes 1 family per camp, 2 active hunters per family, '+
+      '1 hound per camp, and an even split of successful hunts between father and son. '+
+      'The hound therefore affects about half of successful hunts. Actual results may vary.<br><br>'+
+      '<b>Trapping is not optimized in this build.</b>';
+  }else{
+    $('houndNote').innerHTML=
+      '<b>Trapping is intentionally not optimized in this build.</b><br>'+
+      'Extra camps can be built for more traps, but that is treated separately from normal hunting.';
+  }
+}
+
+// ---------- Foraging ----------
+function renderForaging(){
+  const rawCap=Math.max(1,Number($('forageCap').value)||1);
+  const w=Number($('forageWoodland').value)/100;
+  const origin=getOrigin();
+  $('forageWoodlandValue').textContent=Math.round(w*100)+'%';
+
+  // Vogtland doubles the deposit capacity for wild berries and mushrooms.
+  const cap=origin==='vogtland' ? rawCap*GAME.origins.vogtland.forageCapacityMultiplier : rawCap;
+  $('forageEffectiveCap').textContent=Math.round(cap);
+
+  const events=GAME.foraging.growthSeasonDays/GAME.foraging.growthIntervalDays;
+  const perEvent=cap*GAME.foraging.growthFractionOfCapacity;
+  const base=perEvent*events;
+  const bonus=events*w*GAME.foraging.teemingExtraPerGrowthEvent;
+  const total=base+bonus;
+
+  $('forageBase').textContent=Math.round(base);
+  $('forageBonus').textContent=bonus.toFixed(1);
+  $('forageTotal').textContent=Math.round(total);
+  $('foragePerTick').textContent=perEvent.toFixed(1);
+  $('forageChance').textContent=Math.round(w*100)+'%';
+}
+
+['fishType','fishSpecies','fishCap'].forEach(id=>$(id).addEventListener('input',renderFishing));
+['huntRich','rabbitCap','huntWoodland'].forEach(id=>$(id).addEventListener('input',renderHunting));
+['forageType','forageCap','forageWoodland'].forEach(id=>$(id).addEventListener('input',renderForaging));
+$('origin').addEventListener('change',()=>{
+  renderOriginRecommendation();
+  renderFishing();
+  renderHunting();
+  renderForaging();
+});
+
+renderOriginRecommendation();
+renderFishing();
+renderHunting();
+renderForaging();
+</script>
+</body>
+</html>
