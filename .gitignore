@@ -1,0 +1,6 @@
+# Private Manor Lords working/reference files — never publish
+/private/
+/MECHANICS_AND_DATA*.md
+/PRIVATE_*.md
+/PRIVATE_*.txt
+desktop.ini

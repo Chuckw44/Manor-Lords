@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Manor Lords Community Tools</title>
+<style>
+:root{
+--bg:#171512;--paper:#efe2c3;--paper2:#dec49b;--wood:#6f532f;--gold:#b58a3a;--ink:#2d2016;--red:#6e2d25;
+}
+*{box-sizing:border-box}
+body{
+margin:0;padding:20px;min-height:100vh;
+font-family:Georgia,serif;
+background:radial-gradient(circle at top,rgba(255,255,255,.05),transparent 35%),repeating-linear-gradient(90deg,#171512 0 18px,#1c1915 18px 36px);
+display:flex;justify-content:center;align-items:center;
+}
+.frame{
+width:min(1050px,95vw);
+background:linear-gradient(var(--paper),var(--paper2));
+border:3px solid var(--wood);
+padding:36px;
+box-shadow:0 18px 40px rgba(0,0,0,.55);
+color:var(--ink);
+}
+h1{margin:0;text-align:center;font-size:64px;font-weight:500}
+h2{margin:8px 0 30px;text-align:center;color:var(--red);letter-spacing:.25em;font-weight:500}
+p{max-width:700px;margin:0 auto 30px;text-align:center;font-size:18px}
+.section-title{margin:34px 0 8px;text-align:center;color:var(--red);font-size:30px;font-weight:500}
+.section-note{max-width:760px;margin:0 auto 22px;text-align:center;font-size:16px;line-height:1.45;color:#5b4430}
+.grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+gap:22px;
+}
+.card{
+display:block;
+text-decoration:none;
+color:inherit;
+background:linear-gradient(#f6ead1,#e5cfaa);
+border:2px solid #8b6940;
+padding:26px;
+transition:.15s;
+}
+.card:hover{transform:translateY(-4px);box-shadow:0 8px 18px rgba(0,0,0,.25);border-color:var(--gold)}
+.icon{font-size:52px;text-align:center}
+.title{margin-top:10px;text-align:center;font-size:28px;font-weight:bold}
+.rule{width:80px;height:1px;background:#a37b46;margin:12px auto}
+.desc{text-align:center;line-height:1.45;font-size:16px}
+footer{margin-top:30px;text-align:center;color:#5b4430;font-size:14px}
+.creator-credit{
+margin-bottom:14px;
+font-size:15px;
+color:var(--ink);
+}
+</style>
+</head>
+<body>
+<div class="frame">
+<h1>Manor Lords</h1>
+<h2>COMMUNITY TOOLS</h2>
+<p>A collection of interactive planning tools for Manor Lords.</p>
+
+<div class="grid">
+
+<a class="card" href="apiary/">
+<div class="icon">🐝</div>
+<div class="title">Apiary Planner</div>
+<div class="rule"></div>
+<div class="desc">Plan apiaries, Wilding, region capacity and expected honey production.</div>
+</a>
+
+<a class="card" href="pigsty/">
+<div class="icon">🐖</div>
+<div class="title">Pigsty Planner</div>
+<div class="rule"></div>
+<div class="desc">Estimate pork production and determine how many pigsties you need.</div>
+</a>
+
+<a class="card" href="livestock/">
+<div class="icon">🐄</div>
+<div class="title">Livestock Planner</div>
+<div class="rule"></div>
+<div class="desc">Plan cows and sheep, compare butchery strategies, and calculate feed requirements.</div>
+</a>
+
+<a class="card" href="fishing-hunting-foraging/">
+<div class="icon">🐟</div>
+<div class="title">Fishing, Hunting &amp; Foraging Planner</div>
+<div class="rule"></div>
+<div class="desc">Plan sustainable fishing, hunting and foraging from your region's wild resources.</div>
+</a>
+
+
+<a class="card" href="trade-economy-planner/">
+<div class="icon">💰</div>
+<div class="title">Trade &amp; Economy Planner</div>
+<div class="rule"></div>
+<div class="desc">Compare Rich Resources and Origins, plan economic strategies, and identify strong exports.</div>
+</a>
+
+</div>
+
+<h3 class="section-title">Work in Progress</h3>
+<div class="section-note">Experimental tools based on ongoing testing. Results may be incomplete or change as mechanics are verified.</div>
+
+<div class="grid">
+<a class="card" href="testing/food-supply-planner/">
+<div class="icon">🥕</div>
+<div class="title">Food Supply Planner</div>
+<div class="rule"></div>
+<div class="desc">Plan food production and supply while ongoing testing continues to refine production values.</div>
+</a>
+
+<a class="card" href="testing/mechanics-guide/">
+<div class="icon">📖</div>
+<div class="title">Town Needs & Mechanics</div>
+<div class="rule"></div>
+<div class="desc">Reference Manor Lords mechanics, Plot requirements and tested game data as they are documented and verified.</div>
+</a>
+</div>
+
+<footer class="footer">
+    <div class="creator-credit">
+      Created by <strong>ChuckW44</strong> · Feedback &amp; questions: <strong>chuckw44_64972</strong> on Discord
+    </div>
+    <strong>Unofficial Manor Lords Fan Tools</strong><br>
+    This project is not affiliated with or endorsed by Slavic Magic or Hooded Horse.<br>
+    All calculations are based on publicly available game mechanics and community research.
+</footer>
+</div>
+</body>
+</html>

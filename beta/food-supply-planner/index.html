@@ -1,0 +1,709 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Food Supply Planner — Manor Lords</title>
+<style>
+:root{
+  --bg:#091115;--panel:#111a1f;--panel2:#151f24;--line:#6d5834;
+  --gold:#d3aa61;--gold2:#efd7a7;--text:#eee6d7;--muted:#bdb3a2;
+  --green:#99bd73;--blue:#7cb4d0;--amber:#dfad58;--red:#c57d6d;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:Georgia,"Times New Roman",serif}
+body{padding:16px;background:radial-gradient(circle at 70% 0%,rgba(160,120,55,.09),transparent 38%),linear-gradient(#0b1419,#081014)}
+.app{max-width:1450px;margin:auto}
+header{text-align:center;margin-bottom:15px}
+header h1{margin:0;font-weight:500;font-size:42px;letter-spacing:.025em}
+.rule{height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);width:72%;margin:8px auto}
+header p{margin:0;color:var(--muted);font-style:italic}
+.grid{display:grid;grid-template-columns:380px minmax(0,1fr);gap:12px}
+.panel{background:linear-gradient(180deg,rgba(21,32,37,.98),rgba(11,20,24,.98));border:1px solid var(--line);border-radius:6px;padding:15px}
+h2{margin:0 0 12px;font-size:19px;font-weight:500;border-bottom:1px solid var(--line);padding-bottom:8px}
+h3{margin:0 0 8px;font-size:17px;font-weight:500;color:var(--gold2)}
+label{display:block;color:var(--muted);font-size:12px;margin:0 0 5px}
+input,select{width:100%;padding:9px 10px;background:#0e171a;color:var(--text);border:1px solid #6a5737;border-radius:5px;font:16px Georgia}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.row4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.field{margin-bottom:11px}
+.tierbox{border:1px solid rgba(115,92,49,.55);padding:9px;border-radius:5px;background:#0d1619}
+.tierbox strong{display:block;color:var(--gold2);font-size:13px;margin-bottom:5px}
+.range{display:grid;grid-template-columns:1fr 65px;gap:7px;align-items:center}
+.rangeval{padding:8px;border:1px solid var(--line);border-radius:5px;text-align:center;color:var(--gold2)}
+.summary{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;margin-bottom:11px}
+.metric{border:1px solid rgba(115,92,49,.55);border-radius:5px;padding:11px;text-align:center;background:rgba(255,255,255,.014)}
+.metric span{display:block;color:var(--muted);font-size:11px}.metric strong{display:block;font-size:27px;color:var(--green);margin:4px 0}
+.reqgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.req{border:1px solid rgba(115,92,49,.45);border-radius:5px;padding:10px;background:#0d1619}
+.req .name{font-size:13px;color:var(--gold2);min-height:32px}.req .big{font-size:28px;color:var(--green);margin:5px 0}.req small{color:var(--muted);font-size:11px;line-height:1.35;display:block}
+.callout{border-left:3px solid var(--gold);padding:10px 12px;background:rgba(211,170,97,.055);font-size:12px;line-height:1.5;margin-top:10px}
+.tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin:12px 0}
+.tab{cursor:pointer;border:1px solid var(--line);border-radius:5px;background:#0e171a;color:var(--text);padding:10px 6px;font:14px Georgia}
+.tab.active{background:linear-gradient(#344b27,#21351d);border-color:#8fa55d}
+.sourcecards{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.source{border:1px solid rgba(115,92,49,.45);border-radius:5px;padding:11px;background:#0d171a}
+.source .head{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.source .head b{font-size:17px}.badge{font-size:10px;color:var(--gold2);border:1px solid rgba(115,92,49,.5);padding:4px 6px;border-radius:4px}.usedpill{display:inline-flex;align-items:center;gap:5px;margin:6px 0 4px;padding:5px 9px;border:1px solid #9ab969;border-radius:5px;background:rgba(119,157,74,.10);color:#cde39b;font-size:13px;font-weight:bold}.usedpill .num{font-size:18px;color:#b9dc7b}.usedlabel{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}.choicefacts{display:flex;flex-wrap:wrap;gap:7px;margin:6px 0 5px}.choicefacts .usedpill{margin:0}.prodPill{display:inline-flex;align-items:center;gap:5px;padding:5px 9px;border:1px solid rgba(196,160,83,.65);border-radius:5px;background:rgba(196,160,83,.08);color:var(--gold2);font-size:13px;font-weight:bold}.prodPill .num{font-size:18px;color:#e0c06a}.prodPill .label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}.coverage{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}.coverage span{font-size:10px;border:1px solid rgba(135,166,87,.45);color:var(--green);padding:3px 6px;border-radius:4px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.stat{border:1px solid rgba(115,92,49,.35);padding:7px;text-align:center}.stat span{display:block;font-size:10px;color:var(--muted)}.stat strong{display:block;font-size:18px;color:var(--gold2);margin-top:2px}
+.detail{color:var(--muted);font-size:11px;line-height:1.4;margin-top:8px}
+.best{border-color:#87a657;box-shadow:inset 0 0 0 1px rgba(135,166,87,.25)}
+.tablewrap{overflow:auto;margin-top:10px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{border:1px solid rgba(115,92,49,.4);padding:7px;text-align:center}th{font-weight:500;background:#121c20}td:first-child,th:first-child{text-align:left}
+.good{color:var(--green)}.warn{color:var(--amber)}
+footer{text-align:center;color:#8d8069;font-size:11px;padding:17px 0 3px}
+@media(max-width:980px){.grid{grid-template-columns:1fr}.summary,.reqgrid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:650px){body{padding:8px}header h1{font-size:29px}.row4,.row2,.summary,.reqgrid,.sourcecards,.tabs{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <h1>FOOD SUPPLY PLANNER</h1>
+  <div class="rule"></div>
+  <p>Meet burgage food requirements and annual family consumption with the same plan</p>
+</header>
+
+<div class="grid">
+<section class="panel">
+  <h2>Your Town</h2>
+  <div class="row4">
+    <div class="tierbox">
+      <strong>Level 1 Plots</strong>
+      <input id="t1" type="number" min="0" value="53">
+    </div>
+    <div class="tierbox">
+      <strong>Level 2 Plots</strong>
+      <input id="t2" type="number" min="0" value="7">
+    </div>
+    <div class="tierbox">
+      <strong>Level 3 Plots</strong>
+      <input id="t3" type="number" min="0" value="10">
+</div>
+    <div class="tierbox">
+      <strong>Level 4 Plots</strong>
+      <input id="t4" type="number" min="0" value="20">
+</div>
+  </div>
+
+  <h2 style="margin-top:12px">Families by Level</h2>
+  <div class="row4">
+    <div class="tierbox"><strong>Level 1 Families</strong><input id="f1" type="number" min="0" value="56"></div>
+    <div class="tierbox"><strong>Level 2 Families</strong><input id="f2" type="number" min="0" value="7"></div>
+    <div class="tierbox"><strong>Level 3 Families</strong><input id="f3" type="number" min="0" value="10"></div>
+    <div class="tierbox"><strong>Level 4 Families</strong><input id="f4" type="number" min="0" value="80"></div>
+  </div>
+  <div class="note">
+    Enter the family counts shown by the in-game settlement summary. Total Families and annual food demand are calculated automatically.
+  </div>
+
+  <div class="field">
+    <label for="artisanPlots">Plots used by artisans</label>
+    <input id="artisanPlots" type="number" min="0" step="1" value="10">
+  </div>
+  <div id="plotCapacityNote" class="callout"></div>
+
+  <h2 style="margin-top:15px">Level 1 Strategy</h2>
+  <div id="t1Strategy" class="callout">
+    The planner will automatically choose the strongest Level 1 requirement combination from the food sources available in your region.
+  </div>
+
+  <h2 style="margin-top:8px">Environment</h2>
+  <div class="field">
+    <label>Meadow</label>
+    <div class="range"><input id="meadow" type="range" min="0" max="100" value="50"><div id="meadowVal" class="rangeval">40%</div></div>
+  </div>
+  <div class="field">
+    <label>Woodland</label>
+    <div class="range"><input id="woodland" type="range" min="0" max="100" value="40"><div id="woodlandVal" class="rangeval">40%</div></div>
+  </div>
+  <div class="field">
+    <label>Apiaries contributing to Pollination</label>
+    <input id="apiaries" type="number" min="0" max="5" value="5">
+  </div>
+
+  <div class="field">
+    <label for="saltAccess">Access to Salt</label>
+    <select id="saltAccess">
+      <option value="yes" selected>Yes</option>
+      <option value="no">No</option>
+    </select>
+  </div>
+
+  <h2 style="margin-top:8px">Wild Resource Nodes</h2>
+  <div class="field">
+    <label for="wildAnimalType">Wild animal resource</label>
+    <select id="wildAnimalType">
+      <option value="smallgame">Small Game</option>
+      <option value="fish">Fish</option>
+    </select>
+  </div>
+  <div class="field" id="rabbitCapWrap">
+    <label for="rabbitCap">Small Game node capacity</label>
+    <input id="rabbitCap" type="number" min="1" step="1" value="17">
+  </div>
+  <div class="field" id="fishCapWrap" style="display:none">
+    <label for="fishCap">Fish node capacity</label>
+    <input id="fishCap" type="number" min="2" step="1" value="354">
+  </div>
+  <div class="field">
+    <label for="forageCap">Berries / Mushrooms node capacity</label>
+    <input id="forageCap" type="number" min="1" step="1" value="65">
+  </div>
+  <div class="callout">
+    A region can have <b>Small Game or Fish, not both</b>. The selected resource uses the same sustainable-yield model as the Fishing/Hunting planner.
+    Woodland is also used as the Teeming chance for Small Game and Foraging.
+  </div>
+
+  <h2 style="margin-top:8px">Consumption</h2>
+  <div class="callout">
+    Annual food demand is calculated automatically from <b>Total Families × 12</b>.
+    The planner will use the required food categories together rather than asking you to assign an arbitrary percentage of demand to each category.
+  </div>
+<div class="callout">
+    Food requirements are <b>plot access requirements</b>. Consumption is separate: every family consumes <b>1 food per month</b>. This planner keeps those two systems separate.
+  </div>
+</section>
+
+<main>
+<section class="panel">
+  <div class="summary">
+    <div class="metric"><span>Total plots</span><strong id="totalPlots">90</strong><small>burgages</small></div>
+    <div class="metric"><span>Total families</span><strong id="familyOut">153</strong><small>families</small></div>
+    <div class="metric"><span>Annual food demand</span><strong id="annualDemand">1836</strong><small>food / year</small></div>
+    <div class="metric"><span>Food demand to cover</span><strong id="target">1836</strong><small>food / year</small></div>
+    <div class="metric"><span>Food backyards available</span><strong id="foodBackyards">80</strong><small>plots</small></div>
+  </div>
+
+  <h2>Burgage Food Requirements</h2>
+  <div class="reqgrid">
+    <div class="req"><div class="name">🌿 Foraged / Vegetables</div><div class="big" id="rForaged">2</div><small id="rForagedSub">distinct foods needed by highest tier</small></div>
+    <div class="req"><div class="name">🌾 Grains</div><div class="big" id="rGrain">1</div><small id="rGrainSub">distinct foods needed by highest tier</small></div>
+    <div class="req"><div class="name">🍎 Fruits / Animal Produce</div><div class="big" id="rFruit">2</div><small id="rFruitSub">distinct foods needed by highest tier</small></div>
+    <div class="req"><div class="name">🍖 Meats / Fishes</div><div class="big" id="rMeat">2</div><small id="rMeatSub">distinct foods needed by highest tier</small></div>
+  </div>
+  <div id="requirementNote" class="callout"></div>
+
+  <div class="tabs">
+    <button class="tab active" data-cat="overview">Top Choices</button>
+    <button class="tab" data-cat="foraged">Foraged / Vegetables</button>
+    <button class="tab" data-cat="grain">Grains</button>
+    <button class="tab" data-cat="fruit">Fruit / Animal Produce</button>
+    <button class="tab" data-cat="meat">Meats / Fishes</button>
+  </div>
+
+  <div id="allocationSummary" class="callout" style="margin-bottom:10px"></div>
+  <h2 id="catTitle">Top Choices for Your Town</h2>
+  <div id="sourcecards" class="sourcecards"></div>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Source</th><th style="min-width:110px">Used</th><th>Reference unit</th><th>Per unit / year</th><th>Total produced / year</th><th>Comparison</th><th>Requirement role</th><th>Notes</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+
+  <div class="note">
+    Reference units follow the collected production charts: field crops are shown per <b>1 Morgen (350 plants)</b>.
+    Vegetable and orchard chart values are converted to a <b>+50% Burgage Plot</b>: approximately <b>322 vegetable plants</b> or <b>32 orchard trees</b>.
+    Vegetable +50% plot baselines are normalized from tested annual production measured at 1.10× efficiency:
+    <b>Beets 56, Carrots 62, Cabbage 85 food/year at 1.10×</b>. These are normalized to 1.00× (Beets 50.91, Carrots 56.36, Cabbage 77.27), then multiplied by the current Pollination efficiency.
+    Crop, Orchard, and Vegetable yields use the in-game Pollination rule:
+    <b>Efficiency = 1 + 0.30 × (Meadow + Apiation)</b>, with Apiation adding 2% per Apiary up to a 10% cap.
+    For orchard fruit, <b>Cow-equivalent</b> means how many cows would produce the same raw annual Milk output at your current Meadow percentage.
+    In <b>Top Choices</b>, “Used” is now a calculated quantity. The current baseline divides annual town food demand evenly across the number of distinct food sources required by the settlement, then calculates how many backyard plots, Morgens, or cows would be needed for each selected source.
+    For cattle, the displayed unit is the <b>breeding herd</b>. Milk output is shown per breeding cow in Fruit/Animal Produce, while sustainable Beef is shown per breeding cow in Meats/Fishes from expected calf production. The breeding cows are not being counted as slaughtered animals.
+  </div>
+  <div id="recommendation" class="callout"></div>
+</section>
+</main>
+</div>
+
+<footer>Unofficial Manor Lords fan tool — concept build using the project's collected mechanics and production test data.</footer>
+</div>
+
+<script src="../../data/game-data.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const ML=MANOR_LORDS_DATA;
+const FSD=ML.foodSupply;
+const HUNT=ML.hunting;
+const FISH=ML.fishing;
+const FORAGE=ML.foraging;
+const NEEDS=ML.townNeeds;
+let activeCat='overview';
+
+const SOURCES = {
+  foraged:[
+    {name:'Cabbage',backyard:true,unit:'+50% plot',calc:(m,w,n)=>FSD.normalizedAnnualYields.vegetablesPlus50Plot["Cabbage"]*cropEfficiency(n),food:'Cabbages',note:'Based on tested +50% Burgage plot annual output; normalized to 1.00× and adjusted by current Pollination.'},
+    {name:'Carrots',backyard:true,unit:'+50% plot',calc:(m,w,n)=>FSD.normalizedAnnualYields.vegetablesPlus50Plot["Carrots"]*cropEfficiency(n),food:'Carrots',note:'Based on tested +50% Burgage plot annual output; normalized to 1.00× and adjusted by current Pollination.'},
+    {name:'Beetroots',backyard:true,unit:'+50% plot',calc:(m,w,n)=>FSD.normalizedAnnualYields.vegetablesPlus50Plot["Beetroots"]*cropEfficiency(n),food:'Beetroots',note:'Based on tested +50% Burgage plot annual output; normalized to 1.00× and adjusted by current Pollination.'},
+    {name:'Foraging node',unit:'1 node',calc:(m,w)=>forageAnnual(w),food:'Berries / Mushrooms',note:'Uses shared sustainable foraging settings plus Teeming expected bonus.'}
+  ],
+  grain:[
+    {name:'Wheat Bread',unit:'1 Morgen (350 plants)',calc:(m,w,n)=>FSD.normalizedAnnualYields.grainPerMorgen["Wheat Bread"]*cropEfficiency(n),food:'Wheat Bread',note:'Reference yield with Bakery under collected test conditions.'},
+    {name:'Rye Bread',unit:'1 Morgen (350 plants)',calc:(m,w,n)=>FSD.normalizedAnnualYields.grainPerMorgen["Rye Bread"]*cropEfficiency(n),food:'Rye Bread',note:'Reference yield with Bakery under collected test conditions.'},
+    {name:'Oats',unit:'1 Morgen (350 plants)',base:FSD.normalizedAnnualYields.grainPerMorgen["Oats"],food:'Oats',note:'Edible grain reference yield; oats can instead be processed into Feed.'}
+  ],
+  fruit:[
+    {name:'Pears — mature',cowEquivalent:true,backyard:true,unit:'+50% plot (~32 trees)',calc:(m,w,n)=>FSD.normalizedAnnualYields.matureOrchardPlus50Plot["Pears"]*cropEfficiency(n),food:'Pears',note:'Mature orchard reference.'},
+    {name:'Apples — mature',cowEquivalent:true,backyard:true,unit:'+50% plot (~32 trees)',calc:(m,w,n)=>FSD.normalizedAnnualYields.matureOrchardPlus50Plot["Apples"]*cropEfficiency(n),food:'Apples',note:'Mature orchard reference.'},
+    {name:'Quinces — mature',cowEquivalent:true,backyard:true,unit:'+50% plot (~32 trees)',calc:(m,w,n)=>FSD.normalizedAnnualYields.matureOrchardPlus50Plot["Quinces"]*cropEfficiency(n),food:'Quinces',note:'Mature orchard reference.'},
+    {name:'Breeding Cows — Milk',cattleBreeding:true,unit:'1 breeding cow',calc:(m,w,n)=>cowMilkAnnual(n),food:'Milk',note:'Recurring Milk from the breeding herd. The cows themselves are the production unit.'},
+    {name:'Cow Milk',unit:'1 cow',calc:(m,w,n)=>cowMilkAnnual(n),food:'Milk',note:'March–November; Meadow increases milk yield.'},
+    {name:'Goat Milk',backyard:true,unit:'1 goat backyard',base:FSD.normalizedAnnualYields.backyard["Goat Milk"],food:'Milk',note:'1 Milk every 49 days; goat also produces Chevon + Hides.'},
+    {name:'Coop Eggs',backyard:true,unit:'1 coop backyard',base:FSD.normalizedAnnualYields.backyard["Coop Eggs"],food:'Eggs',note:'1 Egg every 30 days; coop also produces Chicken.'},
+    {name:'Cheese from Cow Milk',requiresSalt:true,unit:'1 cow + salt processing',calc:(m,w,n)=>cowMilkAnnual(n)*ML.recipes["Cheese"].outputQty,food:'Cheese',note:'Uses the shared Cheese recipe.'}
+  ],
+  meat:[
+    {name:'Breeding Cows — Beef',cattleBreeding:true,meatCattle:true,unit:'1 breeding cow',base:FSD.normalizedAnnualYields.sustainableBeefPerBreedingCow,food:'Beef',note:'Sustainable Beef from expected calf production; breeding cows are not slaughtered.'},
+    {name:'Pigsty Pork',backyard:true,unit:'1 pigsty backyard',calc:(m,w)=>ML.pigsty.basePorkOutput*ML.pigsty.daysPerYear/(ML.pigsty.baseProductionDays/(1+w/100)),food:'Pork',note:'Scales with Pannage / Woodland.'},
+    {name:'Sausages from Pigsty',requiresSalt:true,backyard:true,unit:'1 pigsty + butcher + salt',calc:(m,w)=>ML.pigsty.basePorkOutput*ML.pigsty.daysPerYear/(ML.pigsty.baseProductionDays/(1+w/100))*ML.recipes["Sausages"].outputQty,food:'Sausages',note:'Uses the shared Sausage recipe.'},
+    {name:'Goat Chevon',backyard:true,unit:'1 goat backyard',base:FSD.normalizedAnnualYields.backyard["Goat Chevon"],food:'Chevon',note:'2 Chevon every 147 days; also produces Milk + Hides.'},
+    {name:'Coop Chicken',backyard:true,unit:'1 coop backyard',base:FSD.normalizedAnnualYields.backyard["Coop Chicken"],food:'Chicken',note:'1 Chicken every 90 days; also produces Eggs.'},
+    {name:'Fishing',wildType:'fish',unit:'1 fish node',calc:(m,w)=>fishAnnual(),food:'Carp / Eel',note:'Uses the shared spring-spawn settings and reserve optimization.'},
+    {name:'Hunting',wildType:'smallgame',unit:'recommended camp setup',calc:(m,w)=>huntAnnual(w),food:'Small Game',note:'Uses shared regular/rich spawn intervals, Teeming, camp throughput and trapping assumptions.'}
+  ]
+};
+
+const TIER = {
+  1:{foraged:0,grain:0,fruit:0,meat:0},
+  2:{...NEEDS.food.tiers[2]},
+  3:{...NEEDS.food.tiers[3]},
+  4:{...NEEDS.food.tiers[4]}
+};
+
+
+function bestFishReserve(cap){
+  let best={reserve:1,yield:-1};
+  for(let r=1;r<cap;r++){
+    let stock=r,total=0;
+    for(let i=0;i<3;i++){
+      stock=Math.min(cap,stock+Math.ceil(stock*0.40));
+      total+=Math.max(0,stock-r);
+      stock=r;
+    }
+    if(total>best.yield || (total===best.yield && r>best.reserve)){
+      best={reserve:r,yield:total};
+    }
+  }
+  return best;
+}
+function fishAnnual(){
+  const cap=Math.max(2,Math.floor(+$('fishCap').value||2));
+  return bestFishReserve(cap).yield;
+}
+function huntAnnual(woodland){
+  const cap=Math.max(1,Math.floor(+$('rabbitCap').value||1));
+  const w=woodland/100;
+
+  let quality;
+  if(cap>=HUNT.rich.minCapacity && cap<=HUNT.rich.maxCapacity) quality='rich';
+  else if(cap>=HUNT.regular.minCapacity && cap<=HUNT.regular.maxCapacity) quality='regular';
+  else {
+    const regularMid=(HUNT.regular.minCapacity+HUNT.regular.maxCapacity)/2;
+    const richMid=(HUNT.rich.minCapacity+HUNT.rich.maxCapacity)/2;
+    quality=Math.abs(cap-richMid)<Math.abs(cap-regularMid)?'rich':'regular';
+  }
+
+  const reserve=Math.max(1,cap-HUNT.reserveBelowCapacity);
+  const spawnEvents=HUNT.daysPerYear/HUNT[quality].spawnIntervalDays;
+  const rabbitSupply=spawnEvents*(1+w*HUNT.teeming.extraOffspringPerSuccessfulRoll);
+  const camps=Math.max(1,Math.ceil(rabbitSupply/HUNT.successfulHuntsPerCampPerYear));
+  const active=Math.min(rabbitSupply,camps*HUNT.successfulHuntsPerCampPerYear);
+  const trapping=camps*
+    HUNT.trapping.assumedTrapsPerOccupiedCamp*
+    (HUNT.daysPerYear/HUNT.trapping.trapCycleDays)*w;
+
+  return active+trapping;
+}
+function forageAnnual(woodland){
+  const cap=Math.max(1,+$('forageCap').value||1);
+  const w=woodland/100;
+  const events=FSD.sustainableForagingEventsPerYear;
+  const base=cap*FORAGE.growthFractionOfCapacity*events;
+  const bonus=events*w*FORAGE.teemingExtraPerGrowthEvent;
+  return base+bonus;
+}
+
+function totalFamilies(n){ return n.f1+n.f2+n.f3+n.f4; }
+
+function nums(){
+  return {
+    t1:+$('t1').value||0,t2:+$('t2').value||0,t3:+$('t3').value||0,t4:+$('t4').value||0,
+    f1:Math.max(0,+$('f1').value||0),f2:Math.max(0,+$('f2').value||0),f3:Math.max(0,+$('f3').value||0),f4:Math.max(0,+$('f4').value||0),
+    artisanPlots:Math.max(0,+$('artisanPlots').value||0),meadow:+$('meadow').value,woodland:+$('woodland').value,
+    apiaries:Math.max(0,Math.min(5,+$('apiaries').value||0))
+  };
+}
+function highestTier(n){ return n.t4?4:n.t3?3:n.t2?2:n.t1?1:0; }
+
+
+function bestKnownOutputForCategory(cat,n){
+  const wildAnimalType=$('wildAnimalType').value;
+  const hasSalt=$('saltAccess').value==='yes';
+  const available=SOURCES[cat]
+    .filter(s=>!s.wildType || s.wildType===wildAnimalType)
+    .filter(s=>!s.requiresSalt || hasSalt)
+    .map(s=>output(s,n))
+    .filter(v=>v!==null && v>0);
+  return available.length ? Math.max(...available) : 0;
+}
+
+function autoT1Strategy(n){
+  // Preserve the two flexible Level 1 requirement groups used by the planner:
+  // first slot: Foraged/Vegetables, Grains, or Fruit/Animal Produce
+  // second slot: Meat/Fish or Fruit/Animal Produce.
+  const firstCandidates=['foraged','grain','fruit'];
+  const secondCandidates=['meat','fruit'];
+
+  const bestFirst=[...firstCandidates].sort(
+    (a,b)=>bestKnownOutputForCategory(b,n)-bestKnownOutputForCategory(a,n)
+  )[0];
+
+  let secondPool=secondCandidates.filter(c=>c!==bestFirst);
+  if(!secondPool.length) secondPool=secondCandidates;
+  const bestSecond=[...secondPool].sort(
+    (a,b)=>bestKnownOutputForCategory(b,n)-bestKnownOutputForCategory(a,n)
+  )[0];
+
+  return [bestFirst,bestSecond];
+}
+
+function requirementCounts(n){
+  const h=highestTier(n);
+  let r={foraged:0,grain:0,fruit:0,meat:0};
+  if(h>=2) r={...TIER[h]};
+  if(h===1){
+    const picks=autoT1Strategy(n);
+    picks.forEach(cat=>r[cat]++);
+  }
+  return r;
+}
+
+function totalAccessPips(n){
+  const p={foraged:0,grain:0,fruit:0,meat:0};
+  // T1 flexible assignment is chosen automatically from current regional efficiency.
+  const t1Picks=autoT1Strategy(n);
+  t1Picks.forEach(cat=>p[cat]+=n.t1);
+  // fixed higher tiers
+  [2,3,4].forEach(level=>{
+    const count=n['t'+level];
+    Object.keys(p).forEach(k=>p[k]+=TIER[level][k]*count);
+  });
+  return p;
+}
+
+function output(s,n){
+  if(typeof s.calc==='function') return s.calc(n.meadow,n.woodland,n);
+  return s.base;
+}
+
+function pollinationAffinity(n){
+  return Math.min(
+    (n.apiaries||0)*FSD.cropPollination.apiaryAffinityPercentPerApiary,
+    FSD.cropPollination.apiaryAffinityCapPercent
+  );
+}
+function cropEfficiency(n){
+  return 1 + FSD.cropPollination.efficiencyBonusAt100Percent *
+    ((n.meadow + pollinationAffinity(n))/100);
+}
+function cowMilkAnnual(n){
+  return ML.livestock.cow.milkMonthsPerYear *
+    (ML.livestock.cow.milkBasePerMonth + ML.livestock.cow.milkMeadowBonus*(n.meadow/100));
+}
+function cowEquivalent(out,n){
+  const cow=cowMilkAnnual(n);
+  return cow>0 ? out/cow : 0;
+}
+
+function beefAnnualPerCow(){
+  return FSD.normalizedAnnualYields.sustainableBeefPerBreedingCow;
+}
+
+
+
+function totalRequiredFoods(req){
+  return req.foraged+req.grain+req.fruit+req.meat;
+}
+function autoFoodShareTarget(req,demand){
+  const slots=Math.max(1,totalRequiredFoods(req));
+  return demand/slots;
+}
+function unitsForSelectedSource(s,n,req,demand){
+  const out=output(s,n);
+  if(out===null || out<=0) return null;
+  const target=autoFoodShareTarget(req,demand);
+  return Math.max(1,Math.ceil(target/out));
+}
+
+function totalProductionForSelectedSource(s,n,req,demand){
+  const units=unitsForSelectedSource(s,n,req,demand);
+  const perUnit=output(s,n);
+  if(units===null || perUnit===null) return null;
+  return units*perUnit;
+}
+function footprintLabel(s,n,req,demand){
+  const units=unitsForSelectedSource(s,n,req,demand);
+  if(units===null) return '—';
+  if(s.backyard) return `${units} Burgage plot${units===1?'':'s'}`;
+  if(s.name==='Wheat Bread' || s.name==='Rye Bread' || s.name==='Oats') return `${units} Morgen${units===1?'':'s'} farmland`;
+  if(s.cattleBreeding || s.name==='Cow Milk') return `${units} breeding cow${units===1?'':'s'}`;
+  if(s.name==='Hunting') return '1 hunting setup';
+  if(s.name==='Fishing') return '1 fish node';
+  if(s.name==='Foraging node') return '1 foraging node';
+  return `${units} unit${units===1?'':'s'}`;
+}
+
+function footprintParts(s,n,req,demand){
+  const units=unitsForSelectedSource(s,n,req,demand);
+  if(units===null) return {num:'—',unit:''};
+  if(s.backyard) return {num:units,unit:`Burgage plot${units===1?'':'s'}`};
+  if(s.name==='Wheat Bread' || s.name==='Rye Bread' || s.name==='Oats') return {num:units,unit:`Morgen${units===1?'':'s'} farmland`};
+  if(s.cattleBreeding || s.name==='Cow Milk') return {num:units,unit:`breeding cow${units===1?'':'s'}`};
+  if(s.name==='Hunting') return {num:1,unit:'hunting setup'};
+  if(s.name==='Fishing') return {num:1,unit:'fish node'};
+  if(s.name==='Foraging node') return {num:1,unit:'foraging node'};
+  return {num:units,unit:`unit${units===1?'':'s'}`};
+}
+function footprintBadge(s,n,req,demand){
+  const p=footprintParts(s,n,req,demand);
+  return `<div class="usedpill"><span class="usedlabel">Used</span><span class="num">${p.num}</span><span>${p.unit}</span></div>`;
+}
+
+function choiceFacts(s,n,req,demand){
+  const used=footprintParts(s,n,req,demand);
+  const produced=totalProductionForSelectedSource(s,n,req,demand);
+  const producedText=produced===null ? '—' : (produced<10 ? produced.toFixed(2) : produced.toFixed(1));
+  return `<div class="choicefacts">
+    <div class="usedpill"><span class="usedlabel">Used</span><span class="num">${used.num}</span><span>${used.unit}</span></div>
+    <div class="prodPill"><span class="label">Produces</span><span class="num">${producedText}</span><span>${s.food || 'food'} / year</span></div>
+  </div>`;
+}
+
+function plotStats(n){
+  const totalPlots=n.t1+n.t2+n.t3+n.t4;
+  const artisan=Math.min(totalPlots,n.artisanPlots);
+  const foodBackyards=Math.max(0,totalPlots-artisan);
+  const families=totalFamilies(n);
+  return {totalPlots,artisan,foodBackyards,families};
+}
+
+function render(){
+  const n=nums(), total=n.t1+n.t2+n.t3+n.t4, families=totalFamilies(n), demand=families*NEEDS.food.perFamilyPerYear, target=demand;
+  $('totalPlots').textContent=total;
+  $('familyOut').textContent=families;
+  $('annualDemand').textContent=Math.round(demand);
+  $('target').textContent=Math.round(target);
+  const ps=plotStats(n);
+  $('foodBackyards').textContent=ps.foodBackyards;
+  $('plotCapacityNote').innerHTML=
+    `<b>${ps.foodBackyards} food-capable backyard plot${ps.foodBackyards===1?'':'s'}</b> remain after reserving ${ps.artisan} artisan plot${ps.artisan===1?'':'s'}. `+
+    `The game-reported family counts total <b>${families} families</b>, producing <b>${families*NEEDS.food.perFamilyPerYear} food/year</b> of annual consumption.`;
+  $('meadowVal').textContent=n.meadow+'%'; $('woodlandVal').textContent=n.woodland+'%';
+  const api=pollinationAffinity(n), combined=n.meadow+api, eff=cropEfficiency(n);
+  if($('pollinationCalc')) $('pollinationCalc').innerHTML=
+    `<b>Pollination:</b> ${n.meadow}% Meadow + ${api}% Apiation = ${combined}% combined. `+
+    `Crop / Orchard / Vegetable efficiency: <b>${eff.toFixed(3)}×</b> (+${((eff-1)*100).toFixed(1)}% yield).`;
+  const wildAnimalType=$('wildAnimalType').value;
+  $('rabbitCapWrap').style.display=wildAnimalType==='smallgame'?'block':'none';
+  $('fishCapWrap').style.display=wildAnimalType==='fish'?'block':'none';
+
+  const req=requirementCounts(n), access=totalAccessPips(n), h=highestTier(n);
+  const t1Picks=autoT1Strategy(n);
+  const t1Names={foraged:'Foraged / Vegetables',grain:'Grains',fruit:'Fruit / Animal Produce',meat:'Meats / Fishes'};
+  $('t1Strategy').innerHTML=n.t1
+    ? `<b>Recommended Level 1 combination:</b> ${t1Names[t1Picks[0]]} + ${t1Names[t1Picks[1]]}. `+
+      `The planner chooses the strongest available source in each flexible Level 1 slot and updates this automatically when your environment or resource access changes.`
+    : `No Level 1 plots currently entered.`;
+  $('rForaged').textContent=req.foraged;$('rGrain').textContent=req.grain;$('rFruit').textContent=req.fruit;$('rMeat').textContent=req.meat;
+  $('rForagedSub').textContent=`${access.foraged} total plot-access pips`;
+  $('rGrainSub').textContent=`${access.grain} total plot-access pips`;
+  $('rFruitSub').textContent=`${access.fruit} total plot-access pips`;
+  $('rMeatSub').textContent=`${access.meat} total plot-access pips`;
+
+  const requiredFoodSlots=totalRequiredFoods(req);
+  const baselinePerSource=autoFoodShareTarget(req,demand);
+  if($('allocationSummary')) $('allocationSummary').innerHTML=
+    `<b>Allocation baseline:</b> ${requiredFoodSlots} distinct foods are required. `+
+    `${Math.round(demand)} annual food demand ÷ ${requiredFoodSlots} sources = about <b>${Math.round(baselinePerSource)} food/year per selected source</b>. `+
+    `The “Used” count is calculated from that target and each source's current output. Each recommended source also shows its resulting <b>total annual production</b>.`;
+
+  $('requirementNote').innerHTML = h
+    ? `<b>Highest occupied tier: Level ${h}.</b> Your highest-tier plots need at least <b>${req.foraged}</b> distinct Foraged/Vegetable food${req.foraged===1?'':'s'}, <b>${req.grain}</b> Grain food${req.grain===1?'':'s'}, <b>${req.fruit}</b> Fruit/Animal Produce food${req.fruit===1?'':'s'}, and <b>${req.meat}</b> Meat/Fish food${req.meat===1?'':'s'}. The smaller numbers under each category show the total requirement pips that must be supplied across all plots.`
+    : 'Enter at least one occupied plot.';
+
+  const titles={foraged:'Foraged / Vegetables',grain:'Grains',fruit:'Fruit / Animal Produce',meat:'Meats / Fishes'};
+
+  function categoryRows(cat){
+    const wildAnimalType=$('wildAnimalType').value;
+    const hasSalt=$('saltAccess').value==='yes';
+    let list=SOURCES[cat]
+      .filter(s=>!s.wildType || s.wildType===wildAnimalType)
+      .filter(s=>!s.requiresSalt || hasSalt)
+      .map(s=>({...s,out:output(s,n)}));
+    return list.map(s=>({...s,need:s.out?Math.ceil(target/s.out):null}));
+  }
+
+  function rankCategory(cat){
+    const needed=req[cat] || 0;
+    const rows=categoryRows(cat);
+    const quantifiable=rows
+      .filter(r=>r.out!==null && r.out>0)
+      .map(r=>({...r,rankScore:r.out}))
+      .sort((a,b)=>b.rankScore-a.rankScore);
+
+    // Requirement planning is about DISTINCT food sources.
+    // Return only as many top choices as the town currently needs in that category.
+    return {
+      needed,
+      rows,
+      top:quantifiable.slice(0,needed)
+    };
+  }
+
+  if(activeCat==='overview'){
+    $('catTitle').textContent='Top Choices for Your Town';
+
+    const cats=['foraged','grain','fruit','meat'];
+    const ranked=cats.map(cat=>({cat,...rankCategory(cat)}));
+
+    $('sourcecards').innerHTML=ranked.map(group=>{
+      const need=group.needed;
+      if(need===0){
+        return `<div class="source">
+          <div class="head"><b>${titles[group.cat]}</b><span class="badge">Not required</span></div>
+          <div class="detail">Your current highest occupied tier does not require a distinct food from this category.</div>
+        </div>`;
+      }
+
+      const picks=group.top;
+      if(!picks.length){
+        return `<div class="source">
+          <div class="head"><b>${titles[group.cat]}</b><span class="badge">${need} needed</span></div>
+          <div class="detail">This category needs ${need} distinct food source${need===1?'':'s'}, but there is not enough normalized production data to rank them yet.</div>
+        </div>`;
+      }
+
+      const pickHtml=picks.map((p,i)=>
+        `<div style="margin-top:${i?7:9}px;padding-top:${i?7:0}px;${i?'border-top:1px solid rgba(115,92,49,.3)':''}">
+          <b class="good">#${i+1} ${p.name}</b>
+          ${choiceFacts(p,n,req,demand)}
+          ${p.coverage ? `<div class="coverage">${p.coverage.map(x=>`<span>${x}</span>`).join('')}</div>` : ''}
+          <div class="detail">${p.out.toFixed(p.out<10?2:1)} food/year per ${p.unit}. ${p.cowEquivalent ? `<b>${cowEquivalent(p.out,n).toFixed(1)} cow-equivalent</b> at ${n.meadow}% Meadow. ` : ''}${p.note}</div>
+        </div>`
+      ).join('');
+
+      const shortage = picks.length < need
+        ? `<div class="detail warn" style="margin-top:8px">Only ${picks.length} quantifiable distinct source${picks.length===1?'':'s'} currently available for a ${need}-food requirement.</div>`
+        : '';
+
+      return `<div class="source ${picks.length?'best':''}">
+        <div class="head"><b>${titles[group.cat]}</b><span class="badge">${need} distinct needed</span></div>
+        ${pickHtml}${shortage}
+      </div>`;
+    }).join('');
+
+    const tableRows=[];
+    ranked.forEach(group=>{
+      group.top.forEach((p,i)=>{
+        tableRows.push(`<tr>
+          <td>${titles[group.cat]} — #${i+1} ${p.name}</td>
+          <td><b class="good">${footprintLabel(p,n,req,demand)}</b></td>
+          <td>${p.unit}</td>
+          <td>${p.out.toFixed(p.out<10?2:1)}</td>
+          <td><b class="good">${totalProductionForSelectedSource(p,n,req,demand).toFixed(totalProductionForSelectedSource(p,n,req,demand)<10?2:1)}</b> ${p.food || 'food'}</td>
+          <td>${p.cowEquivalent ? cowEquivalent(p.out,n).toFixed(1)+' cows' : '—'}</td>
+          <td>Fills 1 of ${group.needed} distinct required source${group.needed===1?'':'s'}</td>
+          <td>${p.note}</td>
+        </tr>`);
+      });
+    });
+    $('rows').innerHTML=tableRows.length?tableRows.join(''):
+      `<tr><td colspan="8">No food sources are required by the current plot mix.</td></tr>`;
+
+    const reqSummary=ranked
+      .filter(g=>g.needed>0)
+      .map(g=>`${titles[g.cat]}: <b>${g.needed}</b>`)
+      .join(' &nbsp;•&nbsp; ');
+
+    $('recommendation').innerHTML=
+      `<b>Requirement-first recommendation:</b> ${reqSummary || 'No category requirements yet.'}<br>`+
+      `The overview shows exactly as many top distinct sources as your highest occupied tier requires. `+
+      `For example, a town topping out at Level 2 shows one Meat/Fish choice, while a town with a Level 4 plot shows the top three Meat/Fish choices. `+
+      `The plot/unit counts are now calculated rather than fixed at 1. For a neutral baseline, the calculator divides the ${Math.round(demand)} annual food demand across the ${totalRequiredFoods(req)} distinct food slots required by the town, or about <b>${Math.round(autoFoodShareTarget(req,demand))} food/year per selected source</b>. Backyard sources show how many Burgage plots that output would require. This is an allocation baseline; the next optimization step can shift more production toward the strongest sources when backyard scarcity makes that advantageous.`;
+    return;
+  }
+
+  $('catTitle').textContent=titles[activeCat];
+  const list=categoryRows(activeCat);
+  const known=list.filter(s=>s.out!==null && s.out>0).sort((a,b)=>b.out-a.out);
+  const best=known[0];
+
+  $('sourcecards').innerHTML=list.map(s=>{
+    const need=s.need;
+    const cls=best && s.name===best.name?'source best':'source';
+    return `<div class="${cls}">
+      <div class="head"><b>${s.name}</b><span class="badge">${s.food}</span></div>
+      <div class="stats">
+        <div class="stat"><span>${s.meatCattle?'Beef / year':'Annual food'}</span><strong>${s.out===null?'—':s.out.toFixed(s.out<10?2:1)}</strong></div>
+        <div class="stat"><span>Variety slot</span><strong>1</strong></div>
+        <div class="stat"><span>Cow-equivalent</span><strong>${s.cowEquivalent && s.out!==null ? cowEquivalent(s.out,n).toFixed(1)+' cows' : '—'}</strong></div>
+      </div>
+      ${choiceFacts(s,n,req,demand)}
+      ${s.coverage ? `<div class="coverage">${s.coverage.map(x=>`<span>${x}</span>`).join('')}</div>` : ''}
+      <div class="detail">${s.unit}. ${s.note}</div>
+    </div>`;
+  }).join('');
+
+  $('rows').innerHTML=list.map(s=>{
+    const need=s.need;
+    return `<tr>
+      <td>${s.name}</td>
+      <td><b class="good">${footprintLabel(s,n,req,demand)}</b></td>
+      <td>${s.unit}</td>
+      <td>${s.out===null?'—':s.out.toFixed(s.out<10?2:1)}</td>
+      <td>${s.out===null?'—':`<b class="good">${totalProductionForSelectedSource(s,n,req,demand).toFixed(totalProductionForSelectedSource(s,n,req,demand)<10?2:1)}</b> ${s.food || 'food'}`}</td>
+      <td>${s.cowEquivalent && s.out!==null ? cowEquivalent(s.out,n).toFixed(1)+' cows' : '—'}</td>
+      <td>Counts as 1 distinct ${titles[activeCat]} food</td>
+      <td>${s.note}</td>
+    </tr>`;
+  }).join('');
+
+  const distinct=req[activeCat];
+  if(best){
+    let msg=`<b>Quick recommendation:</b> ${best.name} has the highest known gross output per reference unit in this category. `;
+    if(distinct>1) msg+=`However, Level ${h} requires <b>${distinct} different foods</b> in this category, so you cannot satisfy the requirement using ${best.name} alone. Pair it with ${distinct-1} other distinct qualifying food${distinct-1===1?'':'s'}. `;
+    msg+=`The town's total annual consumption is <b>${Math.round(target)} food/year</b>. This category is one part of the combined food plan; the planner no longer assumes it must supply an arbitrary percentage by itself.`;
+    if(activeCat==='meat'){
+      if($('wildAnimalType').value==='fish') msg+=` Current wild-resource estimate: <b>${Math.round(fishAnnual())}</b> fish/year.`;
+      else msg+=` Current wild-resource estimate: <b>${Math.round(huntAnnual(n.woodland))}</b> Small Game/year.`;
+    }
+    if(activeCat==='foraged') msg+=` Current foraging estimate: <b>${Math.round(forageAnnual(n.woodland))}</b> Berries/Mushrooms per year.`;
+    $('recommendation').innerHTML=msg;
+  }else{
+    $('recommendation').innerHTML='This category does not yet have enough normalized production data for a direct efficiency comparison.';
+  }
+}
+
+document.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  btn.classList.add('active'); activeCat=btn.dataset.cat; render();
+}));
+['t1','t2','t3','t4','f1','f2','f3','f4','artisanPlots','meadow','woodland','apiaries','saltAccess','wildAnimalType','fishCap','rabbitCap','forageCap'].forEach(id=>$(id).addEventListener('input',render));
+render();
+</script>
+<div class="shared-data-version" style="text-align:center;color:#8f8066;font-size:12px;padding:8px 0 14px">
+Game Data Version: <span data-game-version></span>
+</div>
+<script>
+document.querySelectorAll('[data-game-version]').forEach(function(el){
+  el.textContent = window.MANOR_LORDS_DATA ? MANOR_LORDS_DATA.gameVersion : '—';
+});
+</script>
+
+</body>
+</html>

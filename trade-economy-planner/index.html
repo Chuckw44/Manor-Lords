@@ -1,0 +1,724 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Manor Lords Trade & Economy Planner</title>
+<style>
+:root{
+  --bg:#0f1512;--panel:#18221d;--panel2:#131a16;--line:#33483b;
+  --text:#efe9d8;--muted:#aaa99f;--gold:#e0bd63;--green:#92c98b;
+  --amber:#d7ad68;--red:#d18178;--blue:#89aac8;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 Georgia,serif}
+.wrap{max-width:1220px;margin:0 auto;padding:24px}
+h1{margin:0;color:#f4e3b1;font-size:30px}
+.subtitle{color:var(--muted);margin:4px 0 20px}
+.layout{display:grid;grid-template-columns:320px 1fr;gap:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+h2{font-size:18px;color:#f0d189;margin:0 0 12px}
+h3{font-size:16px;margin:0 0 5px}
+.small{font-size:13px;color:var(--muted)}
+.rich{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.rich label{padding:9px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);cursor:pointer}
+select{width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:10px;font:inherit}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.metric{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px}
+.metric .label{font-size:12px;color:var(--muted)}
+.metric .value{font-size:19px;color:var(--gold);font-weight:bold}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.tabs button,.compareBtn{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:9px 12px;cursor:pointer;font:inherit}
+.tabs button.active,.compareBtn{border-color:var(--gold);color:#f5dc9a}
+.panel{display:none}.panel.active{display:block}
+.summary{border-left:4px solid var(--gold);padding-left:12px;margin:6px 0 16px}
+.origin-preview{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.origin-mini,.industry,.origin-card,.chain,.ranking{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px}
+.origin-mini .rank{color:var(--gold);font-weight:bold}
+.industry{margin-bottom:14px}
+.industry-title{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:8px}
+.industry-title .name{font-size:19px;color:var(--gold);font-weight:bold}
+.phasegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.phase{background:#101713;border:1px solid var(--line);border-radius:9px;padding:10px}
+.phase h3{color:#efd087}
+.phase ul{margin:6px 0 0 18px;padding:0}
+.candidates{margin-top:10px}
+.chip{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:3px 8px;margin:3px 4px 0 0;font-size:12px}
+.keepgrid,.chaingrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.keep{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:11px}
+.keep strong{color:#efc0b9}
+.reason{font-size:13px;color:var(--muted);margin-top:4px}
+.origin-card{margin-bottom:10px}
+.score{color:var(--gold)}
+  .filled-stars{
+    color: var(--gold);
+}
+
+.empty-stars{
+    color: #555;
+}
+.origin-card ul{margin:7px 0 0 18px;padding:0}
+.chain-line{margin:5px 0}
+.callout{padding:10px;border:1px solid #7b633a;background:#221e15;border-radius:8px;color:#ecd29b;font-size:13px}
+.ranktable{width:100%;border-collapse:collapse;margin-top:8px}
+.ranktable th,.ranktable td{padding:8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.ranktable th{color:#eacb7d;font-size:13px}
+.rank1{color:var(--gold);font-weight:bold}
+.positive{color:var(--green);font-weight:bold}.negative{color:var(--red);font-weight:bold}.neutral{color:var(--amber);font-weight:bold}
+.badge{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:2px 7px;font-size:11px}
+.badge.good{border-color:#557a59;color:#cfe6c8}.badge.warn{border-color:#83693e;color:#ecd09b}.badge.bad{border-color:#84524d;color:#efb0aa}
+.math{font-family:Consolas,monospace;font-size:13px;color:#ddd7c8}
+@media(max-width:850px){
+  .layout{grid-template-columns:1fr}.metrics,.origin-preview,.phasegrid,.keepgrid,.chaingrid{grid-template-columns:1fr}
+}
+
+.header-row{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.homeBtn{display:inline-block;background:var(--panel2);color:#f5dc9a;border:1px solid var(--gold);border-radius:8px;padding:9px 13px;text-decoration:none;font-weight:bold;white-space:nowrap;font:inherit;cursor:pointer}
+.homeBtn:hover{filter:brightness(1.12)}
+.footer{margin-top:22px;padding:18px;text-align:center;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+.footer strong{color:#e8d39a}
+@media(max-width:850px){.header-row{align-items:center}}
+
+
+.aboutModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9999;padding:20px}
+.aboutContent{max-width:700px;margin:8vh auto;background:var(--panel);border:1px solid var(--gold);border-radius:12px;padding:22px;color:var(--text);box-shadow:0 20px 60px rgba(0,0,0,.45)}
+.aboutContent h2,.aboutContent h3{color:#f0d189}
+.aboutContent ul{padding-left:20px}
+.aboutClose{float:right;cursor:pointer;font-size:24px;font-weight:bold;color:#f5dc9a;background:none;border:0}
+
+.recipe-controls{display:grid;grid-template-columns:1fr 190px 190px;gap:10px;margin-bottom:12px}
+.recipe-controls input,.recipe-controls select{width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:10px;font:inherit}
+.recipe-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.recipe-stat{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:10px}
+.recipe-stat .label{font-size:12px;color:var(--muted)}
+.recipe-stat .value{font-size:18px;color:var(--gold);font-weight:bold}
+.recipe-ref-table td:nth-child(2){min-width:210px}
+.recipe-ref-table .recipeText{white-space:nowrap}
+@media(max-width:850px){
+  .recipe-controls,.recipe-summary{grid-template-columns:1fr}
+  .recipe-ref-wrap{overflow-x:auto}
+  .recipe-ref-table{min-width:900px}
+}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header-row">
+    <div>
+      <h1>MANOR LORDS — Trade & Economy Planner</h1>
+      <div class="subtitle">Plan your regional economy, compare Origins, and identify strong exports for your resources.</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;"><button id="aboutBtn" class="homeBtn" type="button">About</button><a class="homeBtn" href="../index.html">Home</a></div>
+  </div>
+
+  <div class="layout">
+    <aside class="card">
+      <h2>Rich Resources</h2>
+      <div class="small" style="margin-bottom:8px">Choose exactly two.</div>
+      <div class="rich">
+        <label><input class="richCheck" type="checkbox" value="stone"> Stone</label>
+        <label><input class="richCheck" type="checkbox" value="iron"> Iron</label>
+        <label><input class="richCheck" type="checkbox" value="clay"> Clay</label>
+        <label><input class="richCheck" type="checkbox" value="salt"> Salt</label>
+        <label><input class="richCheck" type="checkbox" value="hunting"> Hunting</label>
+        <label><input class="richCheck" type="checkbox" value="fish"> Fish</label>
+        <label><input class="richCheck" type="checkbox" value="berries"> Foraging</label>
+        <label><input class="richCheck" type="checkbox" value="fertility"> Fertility</label>
+      </div>
+      <div id="count" class="small" style="margin-top:7px">0 of 2 selected</div>
+
+      <h2 style="margin-top:20px">Origin</h2>
+      <select id="origin">
+        <option value="none">No Origin / Base</option>
+        <option value="vogtland">Of the Vogtland</option>
+        <option value="bamberg">Bamberg Smallholders</option>
+        <option value="woodwright">Woodwright Journeymen</option>
+        <option value="regensburg">Regensburg Guildsmen</option>
+        <option value="passau">Smiths of Passau</option>
+        <option value="alps">Born of the Alps</option>
+        <option value="strasburg">Strasburg Masons</option>
+        <option value="nuremberg">Nuremberg Prospectors</option>
+        <option value="weiden">Weiden Hinterlanders</option>
+      </select>
+
+      <div class="callout" style="margin-top:14px">
+        Select your two Rich Resources and Origin to see an economic roadmap, export rankings, and Origin effects.
+      </div>
+    </aside>
+
+    <main>
+      <div class="metrics">
+        <div class="metric"><div class="label">Regional Strength</div><div id="strength" class="value">Select 2</div></div>
+        <div class="metric"><div class="label">Economic Direction</div><div id="direction" class="value">—</div></div>
+        <div class="metric"><div class="label">Selected Origin</div><div id="originName" class="value">No Origin / Base</div></div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="strategy">Economic Strategy</button>
+        <button class="tab" data-tab="rankings">Best Exports</button>
+        <button class="tab" data-tab="origins">Compare Origins</button>
+        <button class="tab" data-tab="chains">Value Chains</button>
+        <button class="tab" data-tab="recipeReference">Recipe &amp; Trade Reference</button>
+      </div>
+
+      <section id="strategy" class="panel active">
+        <div class="card">
+          <h2>Economic Strategy Summary</h2>
+          <div id="summary" class="summary"></div>
+
+          <h2>Top Origin Synergies</h2>
+          <div id="topOrigins" class="origin-preview"></div>
+          <button id="compareOriginsBtn" class="compareBtn" type="button">Compare all Origins</button>
+
+          <h2 style="margin-top:18px">Your Industries</h2>
+          <div id="industries"></div>
+
+          <h2 style="margin-top:18px">Protect Local Supply / Sell Only Clear Surplus</h2>
+          <div class="keepgrid">
+            <div class="keep"><strong>Ale / Mead / Cider</strong><div class="reason">Required beverage supply for Level 2+ burgages. Generally keep local.</div></div>
+            <div class="keep"><strong>Shoes / Clothes</strong><div class="reason">Important town-supply goods. Export only a clear surplus.</div></div>
+            <div class="keep"><strong>Fuel</strong><div class="reason">Homes and multiple production buildings consume it. Export conservatively.</div></div>
+            <div class="keep"><strong>Food</strong><div class="reason">Can be a good early surplus trade when spoilage is likely, but food becomes more valuable locally as the town grows.</div></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="rankings" class="panel">
+        <div class="card">
+          <h2>Best Export Rankings</h2>
+          <div class="callout" style="margin-bottom:12px">
+            <strong>Net Trade Value</strong> compares what an item sells for with the value of the materials used to make it. Raw resources use their sale price directly. Use the strategy guidance alongside the ranking because labor, fuel, town demand, and Trade Route access can change which export is best at a given stage. Pelts and Wax have no other current use, making excess stock good to sell even though they are not always included in the Best Exports ranking.
+          </div>
+          
+          <div id="rankingBox"></div>
+        </div>
+      </section>
+
+      <section id="origins" class="panel">
+        <div class="card">
+          <h2>Origin Comparison</h2>
+          <div class="small" style="margin-bottom:10px">Origin rankings focus on effects that meaningfully change production, trade, or the selected industries.</div>
+          <div id="originRanking"></div>
+        </div>
+      </section>
+
+      <section id="chains" class="panel">
+        <div class="card">
+          <h2>Value Chains</h2>
+          <div class="callout" style="margin-bottom:12px"><strong>Important:</strong> final sale price alone does not decide the recommendation. The useful comparison is the value of inputs you could have sold directly versus the value added by processing them, plus labor, town demand and Trade Route requirements.</div>
+          <div id="chainsBox" class="chaingrid"></div>
+        </div>
+      </section>
+
+      <section id="recipeReference" class="panel">
+        <div class="card">
+          <h2>Recipe &amp; Trade Reference</h2>
+          <div class="callout" style="margin-bottom:12px">
+            Complete recipe reference from the shared planner data. <strong>Net Trade Value</strong> compares the finished batch's export value with the export value of its tradeable material inputs. Labor and fuel are not included.
+          </div>
+
+          <div class="recipe-controls">
+            <input id="recipeSearch" type="search" placeholder="Filter by item or ingredient…">
+            <select id="recipeTradeFilter">
+              <option value="all">All trade classes</option>
+              <option value="Minor">Minor trades</option>
+              <option value="Major">Major trades</option>
+            </select>
+            <select id="recipeSort">
+              <option value="addedDesc">Highest net value</option>
+              <option value="addedAsc">Lowest net value</option>
+              <option value="name">Item name</option>
+              <option value="output">Highest batch value</option>
+            </select>
+          </div>
+
+          <div class="recipe-summary">
+            <div class="recipe-stat"><div class="label">Recipes Shown</div><div id="recipeCount" class="value">—</div></div>
+            <div class="recipe-stat"><div class="label">Best Net Trade Value</div><div id="recipeBest" class="value">—</div></div>
+            <div class="recipe-stat"><div class="label">Selected Origin</div><div id="recipeOrigin" class="value">—</div></div>
+          </div>
+
+          <div class="recipe-ref-wrap">
+            <table class="ranktable recipe-ref-table">
+              <thead>
+                <tr>
+                  <th>Output</th>
+                  <th>Recipe</th>
+                  <th>Trade</th>
+                  <th>Unit Sale</th>
+                  <th>Batch Sale</th>
+                  <th>Input Value</th>
+                  <th>Net Trade Value</th>
+                </tr>
+              </thead>
+              <tbody id="recipeReferenceBody"></tbody>
+            </table>
+          </div>
+          <div class="small" style="margin-top:10px">
+            Milk has no trade value, so the current Cheese calculation uses Salt as the sellable material opportunity cost. Origin export modifiers are applied using the same rules as Best Exports.
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  
+<div id="aboutModal" class="aboutModal" aria-hidden="true">
+  <div class="aboutContent" role="dialog" aria-modal="true" aria-labelledby="aboutTitle">
+    <button id="aboutClose" class="aboutClose" type="button" aria-label="Close">&times;</button>
+
+    <h2 id="aboutTitle">About</h2>
+    <p>This planner helps identify strong industries and exports based on your selected Rich Resources and Origin.</p>
+
+    <h3>Net Trade Value</h3>
+    <p>Net Trade Value compares the sale value of finished goods against the value of the materials used to produce them.</p>
+
+    <h3>Notes &amp; Assumptions</h3>
+    <ul>
+      <li>Recommendations assume typical long-term gameplay.</li>
+      <li>Labor, fuel, transport, Trade Route access, and local demand can change the best choice.</li>
+      <li>Origin recommendations focus on effects that materially impact production or trade.</li>
+      <li>Recipes and mechanics are based on the current beta game version 8.097.</li>
+    </ul>
+
+    <hr>
+
+    <p><strong>Unofficial Manor Lords Fan Tool</strong><br>
+    Not affiliated with or endorsed by Slavic Magic or Hooded Horse.</p>
+  </div>
+</div>
+
+<footer class="footer">
+    <strong>Unofficial Manor Lords Fan Tool</strong><br>
+    Not affiliated with or endorsed by Slavic Magic or Hooded Horse.<br>
+    All calculations are based on publicly available game mechanics and community research.
+  </footer>
+
+</div>
+
+<script src="../data/game-data.js?v=8.100-recipes-20260818"></script>
+<script>
+(function(){
+"use strict";
+
+// Shared Manor Lords data
+var prices = MANOR_LORDS_DATA.trade.prices;
+var tradeClass = MANOR_LORDS_DATA.trade.tradeClass;
+var recipes = MANOR_LORDS_DATA.recipes;
+var origins = MANOR_LORDS_DATA.origins;
+var originModifiers = MANOR_LORDS_DATA.originModifiers || {};
+
+
+var industries={
+  stone:{
+    name:"Stone / Masonry",
+    early:["Sell Rough Stone","Sell Rubble Stone"],
+    transition:["Shift some Rubble Stone into Mortar when labor allows","Keep raw stone moving if processing becomes the bottleneck"],
+    mature:["Evaluate Dressed Stone once its Major Trade Route is worthwhile","Use raw stone mainly as overflow if processing capacity is full"],
+    candidates:["Rough Stone","Rubble Stone","Mortar","Dressed Stone"]
+  },
+  clay:{
+    name:"Clay / Roof Tile",
+    early:["Sell raw Clay while labor is scarce"],
+    transition:["Add Roof Tile production as soon as you can spare the labor","Continue selling Clay if extraction outruns processing"],
+    mature:["Favor Roof Tiles over raw Clay when processing capacity is available","Sell raw Clay mainly as surplus"],
+    candidates:["Clay","Rooftiles"]
+  },
+  iron:{
+    name:"Iron / Metalworking",
+    early:["Sell some Iron Ore if early Regional Wealth is more valuable than processing"],
+    transition:["Compare Iron Slabs against raw Ore","Only process further when the value added justifies labor and fuel"],
+    mature:["Use the Best Exports tab to compare Tools, weapons and armor by input value","Do not assume the most expensive finished item is the best export"],
+    candidates:["Iron Ore","Iron Slab","Tools","Helmets","Spears","Polearms","Sidearms","Crossbows","Mail Armor","Plate Armor"]
+  },
+  salt:{
+    name:"Salt / Food Preservation",
+    early:["Sell Salt early while your settlement has little use for it"],
+    transition:["Begin reserving Salt as Cheese and Sausage production comes online","Continue selling genuine surplus"],
+    mature:["Prioritize Salt for Cheesemonger production: Cheese and Sausages","Export raw Salt only when production exceeds processing needs"],
+    candidates:["Salt","Cheese","Sausages"]
+  },
+  hunting:{
+    name:"Hunting",
+    early:["Sell Pelts","Sell surplus Small Game if food production exceeds demand"],
+    transition:["Keep more Small Game for food as population grows","Continue using Pelts as the cleaner export"],
+    mature:["Use Small Game primarily for food as the settlement grows","Pelts remain the cleaner long-term hunting export"],
+    candidates:["Pelts","Small Game"]
+  },
+  fish:{
+    name:"Fishing",
+    early:["Sell surplus Fish when a small town cannot consume catches before spoilage"],
+    transition:["Keep more Fish as population grows","Use trade mainly to clear real surplus"],
+    mature:["Treat Fish primarily as food unless production remains well above demand"],
+    candidates:["Carp","Eel"]
+  },
+  berries:{
+    name:"Foraging",
+    early:["Sell surplus Berries or Mushrooms when spoilage is likely"],
+    transition:["Shift toward feeding the growing town as local demand rises"],
+    mature:["Treat Berries or Mushrooms mainly as food unless your region continues producing a large surplus"],
+    candidates:["Berries","Mushrooms"]
+  },
+  fertility:{
+    name:"Agriculture",
+    early:["Sell raw crops only when they are genuine surplus and labor is too scarce for processing"],
+    transition:["Develop higher-value crop chains such as Flour/Bread and Linen","Protect food, clothing and beverage supply"],
+    mature:["Export processed agricultural goods only when local food, clothing and beverage needs are comfortably supplied"],
+    candidates:["Flax","Rye Grain","Wheat Grain","Barley","Oats","Animal Feed","Rye Flour","Wheat Flour","Rye Bread","Wheat Bread","Linen"]
+  }
+};
+
+function selectedRich(){
+  return Array.prototype.slice.call(document.querySelectorAll(".richCheck:checked")).map(function(x){return x.value;});
+}
+function titleCase(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+function displayName(s){
+  if(s==="berries") return "Foraging";
+  return titleCase(s);
+}
+function originScores(rich){
+  return Object.keys(origins).filter(function(k){return k!=="none";}).map(function(k){
+    var score=0;
+    rich.forEach(function(r){score += origins[k].synergy[r]||0;});
+    return {key:k,name:origins[k].name,score:score};
+  }).sort(function(a,b){return b.score-a.score;});
+}
+function stars(score){
+
+  function makeStars(filled){
+    return '<span class="filled-stars">' +
+             '★★★★★'.substring(0, filled) +
+           '</span>' +
+           '<span class="empty-stars">' +
+             '★★★★★'.substring(filled) +
+           '</span>';
+  }
+
+  if(score>=8) return makeStars(5);
+  if(score>=6) return makeStars(4);
+  if(score>=4) return makeStars(3);
+  if(score>=2) return makeStars(2);
+  return makeStars(1);
+}
+function direction(rich){
+  var extraction=rich.some(function(x){return ["stone","iron","clay","salt"].indexOf(x)>=0;});
+  var food=rich.some(function(x){return ["fish","hunting","berries","fertility","salt"].indexOf(x)>=0;});
+  if(extraction&&food)return "Mixed Economy";
+  if(extraction)return "Extraction + Processing";
+  if(food)return "Food / Gathering";
+  return "Balanced";
+}
+function modPrice(item,originKey){
+  var p=prices[item];
+  if(p==null)return null;
+
+  var mods=originModifiers[originKey]||{};
+
+  if(originKey==="vogtland" && tradeClass[item]==="Minor") {
+    var minorMultiplier=mods.minorTradeExportMultiplier||1.50;
+    return Math.ceil(p*minorMultiplier);
+  }
+
+  if(originKey==="passau" && (mods.weaponExportItems||["Spears","Sidearms","Polearms"]).indexOf(item)>=0) {
+    return Math.round(p*(mods.weaponExportMultiplier||1.30));
+  }
+
+  if(originKey==="nuremberg" && (mods.armorExportItems||["Helmets","Mail Armor","Plate Armor"]).indexOf(item)>=0) {
+    return Math.round(p*(mods.armorExportMultiplier||1.20));
+  }
+
+  return p;
+}
+function inputValue(recipe,originKey){
+  var total=0, missing=[];
+  var valuedInputs=recipe.valueInputs||recipe.inputs;
+  Object.keys(valuedInputs).forEach(function(item){
+    var p=modPrice(item,originKey);
+    if(p==null)missing.push(item);
+    else total += p*valuedInputs[item];
+  });
+  return {value:total,missing:missing};
+}
+function itemEconomics(item,originKey){
+  var p=modPrice(item,originKey);
+  var r=recipes[item];
+  if(p==null)return {item:item,price:p,calculable:false};
+  if(!r){
+    return {
+      item:item,price:p,calculable:true,inputValue:0,outputValue:p,
+      added:p,outputQty:1,confidence:"raw",note:"Raw resource / direct good: no material inputs are required."
+    };
+  }
+  var iv=inputValue(r,originKey);
+  if(iv.missing.length)return {item:item,price:p,calculable:false,missing:iv.missing};
+  var outputValue=p*r.outputQty;
+  var added=outputValue-iv.value;
+  return {
+    item:item,price:p,calculable:true,inputValue:iv.value,outputValue:outputValue,
+    added:added,outputQty:r.outputQty,confidence:r.confidence,note:r.note||""
+  };
+}
+function rankingForIndustry(key,originKey){
+  var items=industries[key].candidates.slice();
+  var rows=items.map(function(item){
+    var econ=itemEconomics(item,originKey);
+    if(!econ.calculable){
+      return {item:item,score:null,econ:econ,raw:true};
+    }
+    return {item:item,score:econ.added,econ:econ,raw:false};
+  });
+  rows.sort(function(a,b){
+    if(a.score==null && b.score==null)return (modPrice(b.item,originKey)||0)-(modPrice(a.item,originKey)||0);
+    if(a.score==null)return 1;
+    if(b.score==null)return -1;
+    return b.score-a.score;
+  });
+  return rows;
+}
+function confidenceLabel(e){
+  if(!e || !e.calculable)return '<span class="badge warn">Recipe incomplete</span>';
+  if(e.confidence==="assumed_chain")return '<span class="badge warn">Recipe needs verification</span>';
+  return "";
+}
+
+
+function recipeText(item,recipe){
+  var inputs=Object.keys(recipe.inputs).map(function(input){
+    var qty=recipe.inputs[input];
+    return qty+" "+input;
+  }).join(" + ");
+  return inputs+" → "+recipe.outputQty+" "+item;
+}
+function renderRecipeReference(originKey){
+  var searchEl=document.getElementById("recipeSearch");
+  var tradeEl=document.getElementById("recipeTradeFilter");
+  var sortEl=document.getElementById("recipeSort");
+  if(!searchEl || !tradeEl || !sortEl)return;
+
+  var q=(searchEl.value||"").toLowerCase().trim();
+  var tradeFilter=tradeEl.value;
+  var rows=Object.keys(recipes).map(function(item){
+    var recipe=recipes[item];
+    var econ=itemEconomics(item,originKey);
+    return {
+      item:item,
+      recipe:recipe,
+      econ:econ,
+      trade:tradeClass[item]||"—",
+      text:recipeText(item,recipe)
+    };
+  }).filter(function(row){
+    if(q && (row.item+" "+row.text).toLowerCase().indexOf(q)<0)return false;
+    if(tradeFilter!=="all" && row.trade!==tradeFilter)return false;
+    return true;
+  });
+
+  var sort=sortEl.value;
+  rows.sort(function(a,b){
+    if(sort==="name")return a.item.localeCompare(b.item);
+    if(sort==="output")return ((b.econ.outputValue||-9999)-(a.econ.outputValue||-9999));
+    if(sort==="addedAsc")return ((a.econ.added==null?999999:a.econ.added)-(b.econ.added==null?999999:b.econ.added));
+    return ((b.econ.added==null?-999999:b.econ.added)-(a.econ.added==null?-999999:a.econ.added));
+  });
+
+  document.getElementById("recipeCount").textContent=rows.length;
+  document.getElementById("recipeOrigin").textContent=origins[originKey].name;
+  var calculable=rows.filter(function(r){return r.econ.calculable;});
+  if(calculable.length){
+    var best=calculable.slice().sort(function(a,b){return b.econ.added-a.econ.added;})[0];
+    document.getElementById("recipeBest").textContent=best.item+" ("+(best.econ.added>0?"+":"")+best.econ.added+" RW)";
+  }else{
+    document.getElementById("recipeBest").textContent="—";
+  }
+
+  document.getElementById("recipeReferenceBody").innerHTML=rows.map(function(row){
+    var e=row.econ, r=row.recipe;
+    var warning=confidenceLabel(e);
+    if(!e.calculable){
+      return '<tr><td><strong>'+row.item+'</strong>'+(warning?'<div>'+warning+'</div>':'')+'</td>'+
+        '<td class="recipeText">'+row.text+'</td><td>'+row.trade+'</td><td>'+((e.price==null)?"—":e.price)+'</td>'+
+        '<td>—</td><td>—</td><td>—</td></tr>';
+    }
+    var cls=e.added>0?"positive":(e.added<0?"negative":"neutral");
+    return '<tr><td><strong>'+row.item+'</strong>'+(warning?'<div>'+warning+'</div>':'')+'</td>'+
+      '<td class="recipeText">'+row.text+'</td>'+
+      '<td>'+row.trade+'</td>'+
+      '<td>'+e.price+'</td>'+
+      '<td>'+e.outputValue+'</td>'+
+      '<td>'+e.inputValue+'</td>'+
+      '<td class="'+cls+'">'+(e.added>0?"+":"")+e.added+'</td></tr>';
+  }).join("");
+}
+
+function render(){
+  var rich=selectedRich();
+  var originKey=document.getElementById("origin").value;
+  var origin=origins[originKey];
+
+  document.getElementById("count").textContent=rich.length+" of 2 selected";
+  document.getElementById("strength").textContent=rich.length?rich.map(displayName).join(" + "):"Select 2";
+  document.getElementById("direction").textContent=direction(rich);
+  document.getElementById("originName").textContent=origin.name;
+
+  if(rich.length===2){
+    document.getElementById("summary").innerHTML=
+      "This region supports <strong>"+industries[rich[0]].name+"</strong> and <strong>"+industries[rich[1]].name+"</strong>. "+
+      "The strategy view handles the progression; the <strong>Best Exports</strong> tab now uses the game's current trade values and known recipes to show where processing actually adds Regional Wealth.";
+  }else{
+    document.getElementById("summary").textContent="Choose exactly two Rich Resources.";
+  }
+
+  var ranks=originScores(rich), top=ranks.slice(0,2);
+  document.getElementById("topOrigins").innerHTML=top.map(function(r,i){
+    var notes=[];
+    rich.forEach(function(res){
+      var v=origins[r.key].synergy[res]||0;
+      if(v>=4)notes.push("Strong "+displayName(res)+" synergy");
+      else if(v>=2)notes.push("Helpful for "+displayName(res));
+      else if(v<0)notes.push("Works against "+displayName(res));
+    });
+    if(!notes.length)notes.push("No direct Rich Resource synergy");
+    return '<div class="origin-mini"><div class="rank">'+(i+1)+'. '+r.name+' — '+stars(r.score)+'</div><div class="reason">'+notes.join(" • ")+'</div></div>';
+  }).join("");
+
+  document.getElementById("industries").innerHTML=rich.length?rich.map(function(r){
+    var ind=industries[r];
+    return '<div class="industry">'+
+      '<div class="industry-title"><div><div class="name">'+ind.name+'</div><div class="small">'+titleCase(r)+' Industry</div></div></div>'+
+      '<div class="phasegrid">'+
+        '<div class="phase"><h3>Early</h3><ul>'+ind.early.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul></div>'+
+        '<div class="phase"><h3>Transition</h3><ul>'+ind.transition.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul></div>'+
+        '<div class="phase"><h3>Mature</h3><ul>'+ind.mature.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul></div>'+
+      '</div>'+
+    '</div>';
+  }).join(""):'<div class="industry">Choose two Rich Resources.</div>';
+
+  document.getElementById("rankingBox").innerHTML=rich.length?rich.map(function(r){
+    var rows=rankingForIndustry(r,originKey);
+    return '<div class="ranking" style="margin-bottom:14px"><h3>'+industries[r].name+'</h3>'+
+      '<table class="ranktable"><thead><tr><th>Rank</th><th>Item</th><th>Export</th><th>Input Value</th><th>Net Trade Value</th><th>What it means</th></tr></thead><tbody>'+
+      rows.map(function(row,i){
+        var e=row.econ, p=modPrice(row.item,originKey);
+        var rank=i+1;
+        if(!e.calculable){
+          var why="Recipe data unavailable.";
+          return '<tr><td>'+rank+'</td><td><strong>'+row.item+'</strong></td><td>'+((p==null)?"—":p)+'</td><td>—</td><td>—</td><td>'+confidenceLabel(e)+'<div class="reason">'+why+'</div></td></tr>';
+        }
+        var cls=e.added>0?"positive":(e.added<0?"negative":"neutral");
+        var interpretation;
+        if(e.confidence==="raw"){
+          interpretation="Direct sale: Net Trade Value equals the sale price.";
+        }else{
+          interpretation=e.added>0?"The output batch has "+e.added+" RW of Net Trade Value after subtracting sellable material inputs, before labor/fuel.":
+            (e.added<0?"The output batch is worth "+Math.abs(e.added)+" RW less than the sellable material inputs, before labor/fuel.":"The output batch has 0 RW Net Trade Value after material inputs, before labor/fuel.");
+        }
+        var warning=confidenceLabel(e);
+        var itemCell='<strong>'+row.item+'</strong>'+(warning?'<div>'+warning+'</div>':'');
+        var exportDisplay;
+        if(e.outputQty>1){
+          exportDisplay=e.outputValue+' <span class="small">total for '+e.outputQty+' units</span>';
+        }else{
+          exportDisplay=e.outputValue;
+        }
+        var mathLine;
+        if(e.confidence==="raw"){
+          mathLine='Sale price = '+e.outputValue+' RW';
+        }else if(e.outputQty>1){
+          mathLine=e.outputQty+' units × '+e.price+' RW = '+e.outputValue+' RW';
+        }else{
+          mathLine='Export value = '+e.outputValue+' RW';
+        }
+        return '<tr><td class="'+(i===0?"rank1":"")+'">'+rank+'</td><td>'+itemCell+'</td>'+
+          '<td>'+exportDisplay+'</td><td>'+e.inputValue+'</td><td class="'+cls+'">'+(e.added>0?"+":"")+e.added+'</td>'+
+          '<td><div class="math">'+mathLine+'</div><div class="reason">'+interpretation+(e.note?'<br>'+e.note:'')+'</div></td></tr>';
+      }).join("")+'</tbody></table></div>';
+  }).join(""):'<div class="ranking">Choose two Rich Resources.</div>';
+
+  document.getElementById("originRanking").innerHTML=ranks.map(function(r,i){
+    var notes=[];
+    rich.forEach(function(res){
+      var v=origins[r.key].synergy[res]||0;
+      if(v>=4)notes.push("Strong "+displayName(res)+" synergy");
+      else if(v>=2)notes.push("Helpful for "+displayName(res));
+      else if(v<0)notes.push("Works against "+displayName(res));
+    });
+    if(!notes.length)notes.push("No direct Rich Resource synergy");
+    return '<div class="origin-card"><h3>'+(i+1)+'. '+r.name+' <span class="score">'+stars(r.score)+'</span></h3><div class="reason">'+notes.join(" • ")+'</div><ul>'+origins[r.key].effects.map(function(e){return '<li>'+e+'</li>';}).join('')+'</ul></div>';
+  }).join("");
+
+  document.getElementById("chainsBox").innerHTML=rich.length?rich.map(function(r){
+    var rows=rankingForIndustry(r,originKey).filter(function(x){return x.econ.calculable;});
+    if(!rows.length)return '<div class="chain"><h3>'+industries[r].name+'</h3><div class="reason">No complete recipe/value calculation is available yet. Strategy is based on raw export value, local demand and known downstream uses.</div></div>';
+    return '<div class="chain"><h3>'+industries[r].name+'</h3>'+
+      rows.map(function(row){
+        var e=row.econ;
+        return '<div class="chain-line"><strong>'+row.item+'</strong>: input '+e.inputValue+' → output '+e.outputValue+' = <span class="'+(e.added>0?'positive':e.added<0?'negative':'neutral')+'">'+(e.added>0?'+':'')+e.added+' RW net</span></div>';
+      }).join("")+'</div>';
+  }).join(""):'<div class="chain">Choose two Rich Resources.</div>';
+
+  renderRecipeReference(originKey);
+}
+
+var checks=Array.prototype.slice.call(document.querySelectorAll(".richCheck"));
+checks.forEach(function(c){
+  c.addEventListener("change",function(e){
+    var selected=checks.filter(function(x){return x.checked;});
+    if(selected.length>2)e.target.checked=false;
+    render();
+  });
+});
+document.getElementById("origin").addEventListener("change",render);
+["recipeSearch","recipeTradeFilter","recipeSort"].forEach(function(id){
+  var el=document.getElementById(id);
+  if(!el)return;
+  el.addEventListener(id==="recipeSearch"?"input":"change",function(){
+    renderRecipeReference(document.getElementById("origin").value);
+  });
+});
+
+document.querySelectorAll(".tab").forEach(function(btn){
+  btn.addEventListener("click",function(){
+    document.querySelectorAll(".tab").forEach(function(b){b.classList.remove("active");});
+    document.querySelectorAll(".panel").forEach(function(p){p.classList.remove("active");});
+    btn.classList.add("active");
+    document.getElementById(btn.getAttribute("data-tab")).classList.add("active");
+  });
+});
+document.getElementById("compareOriginsBtn").addEventListener("click",function(){
+  document.querySelectorAll(".tab").forEach(function(b){b.classList.remove("active");});
+  document.querySelectorAll(".panel").forEach(function(p){p.classList.remove("active");});
+  document.querySelector('.tab[data-tab="origins"]').classList.add("active");
+  document.getElementById("origins").classList.add("active");
+});
+
+
+var aboutBtn=document.getElementById("aboutBtn");
+var aboutModal=document.getElementById("aboutModal");
+var aboutClose=document.getElementById("aboutClose");
+
+function openAbout(){
+  if(!aboutModal)return;
+  aboutModal.style.display="block";
+  aboutModal.setAttribute("aria-hidden","false");
+}
+function closeAbout(){
+  if(!aboutModal)return;
+  aboutModal.style.display="none";
+  aboutModal.setAttribute("aria-hidden","true");
+}
+
+if(aboutBtn)aboutBtn.addEventListener("click",openAbout);
+if(aboutClose)aboutClose.addEventListener("click",closeAbout);
+if(aboutModal)aboutModal.addEventListener("click",function(e){
+  if(e.target===aboutModal)closeAbout();
+});
+document.addEventListener("keydown",function(e){
+  if(e.key==="Escape")closeAbout();
+});
+
+render();
+})();
+</script>
+</body>
+</html>
