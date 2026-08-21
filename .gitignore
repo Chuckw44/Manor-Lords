@@ -4,3 +4,5 @@
 /PRIVATE_*.md
 /PRIVATE_*.txt
 desktop.ini
+# Safety: never commit repository ZIPs created in the repo root
+/*.zip
