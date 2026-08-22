@@ -169,7 +169,7 @@ footer{text-align:center;color:#8f8066;font-size:13px;padding:20px 0 5px}
         </div>
         <div class="note">
           Fish reproduce only on March 1, April 1 and May 1. Each spawn adds 40% of the current stock,
-          rounded up, up to the node's cap. The ideal biological reserve is cap ÷ 1.4 (about 71.4%), which
+          rounded up, up to the node's cap. The ideal reserve is cap ÷ 1.4 (about 71.4%), which
           maximizes each spring spawn. The planner calculates how many fishing spots must be worked to clear
           the spring growth before the next spawn, then converts that workload into a tested staffing recommendation.
           Recommendations include practical headroom for normal worker interruptions that vary by settlement.
@@ -591,8 +591,8 @@ function renderFishing(){
       ? `<b>Hut placement:</b> use about one Fishing Hut per assigned family and spread them around the fishing area to reduce travel. `
       : `<b>Hut placement:</b> on a regular node, up to two assigned families can share a well-placed Fishing Hut. `)+
     (best.constrained
-      ? `Even full-node catch capacity cannot completely clear the biological spring surplus before the next spawn, so the planner uses the consecutive-spawn reserve of <b>${best.reserve}</b>. `
-      : `Full-node catch capacity can return the stock to the biological reserve of <b>${best.reserve}</b> between spring spawns. `)+
+      ? `Even full-node catch capacity cannot completely clear the spring surplus before the next spawn, so the planner uses the consecutive-spawn reserve of <b>${best.reserve}</b>. `
+      : `Full-node catch capacity can return the stock to the reserve of <b>${best.reserve}</b> between spring spawns. `)+
     (origin==='strasburg'
       ? `<b>Strasburg Masons:</b> Fisherman's Hut labor speed is reduced by 20%, so effective spot catch capacity is reduced accordingly. `
       : ``);
