@@ -51,6 +51,23 @@ select,input[type=number],input[type=range]{
 .season{border:1px solid rgba(115,92,49,.4);padding:10px;text-align:center}
 .season strong{display:block;font-size:23px;color:var(--gold2);margin-top:4px}
 .note{color:var(--muted);font-style:italic;font-size:13px;line-height:1.45;margin-top:10px}
+.layout-card{margin-top:18px;border-top:1px solid rgba(115,92,49,.45);padding-top:14px}
+.layout-title{display:flex;justify-content:space-between;gap:12px;align-items:baseline;margin-bottom:7px}
+.layout-title strong{font-size:17px;font-weight:500;color:var(--gold2)}
+.layout-title span{font-size:12px;color:var(--muted);font-style:italic;text-align:right}
+#fishLayout{width:100%;min-height:310px;display:grid;place-items:center;border:1px solid rgba(115,92,49,.38);border-radius:6px;background:radial-gradient(circle at 50% 45%,rgba(59,94,91,.08),transparent 55%),rgba(3,9,12,.22);overflow:hidden}
+#fishLayout svg{width:100%;height:auto;display:block}
+.layout-water{fill:#132d35;stroke:#617c78;stroke-width:2}
+.layout-bank{fill:none;stroke:#8d7950;stroke-width:7;stroke-linecap:round;opacity:.7}
+.layout-spot{fill:#0b1316;stroke:var(--gold2);stroke-width:2.2}
+.layout-spot-core{fill:var(--gold);opacity:.9}
+.layout-hut-body{fill:#735a35;stroke:#d3ad6d;stroke-width:1.5}
+.layout-hut-roof{fill:#3b2b1c;stroke:#d3ad6d;stroke-width:1.5;stroke-linejoin:round}
+.layout-hut-door{fill:#171412;stroke:#b89055;stroke-width:1}
+.layout-caption{fill:#c4b594;font:italic 12px Georgia,serif}
+.layout-label{fill:#f2d9a3;font:600 13px Georgia,serif}
+.layout-legend-text{fill:#d8c8a8;font:12px Georgia,serif}
+.layout-legend-box{fill:rgba(4,10,13,.55);stroke:rgba(115,92,49,.55);stroke-width:1}
 .warning{color:#e5b868}
 .good{color:var(--green)}
 table{width:100%;border-collapse:collapse;margin-top:10px;font-size:14px}
@@ -131,10 +148,24 @@ footer{text-align:center;color:#8f8066;font-size:13px;padding:20px 0 5px}
           <div>
             <label for="fishCap">Node capacity</label>
             <input id="fishCap" type="number" min="2" step="1" value="354">
-          </div>        </div>
+          </div>
+          <div>
+            <label for="fishQuality">Node quality</label>
+            <select id="fishQuality">
+              <option value="rich" selected>Rich</option>
+              <option value="regular">Regular</option>
+            </select>
+          </div>
+        </div>
         <div class="note">
-          The planner uses <span id="fishSpotRateNote">15.0</span> fish per occupied fishing spot per month, based on observed results of
-   about 165 fish/month from 11 spots and about 90 fish/month from 6 spots
+          Each fishing spot can catch about <span id="fishSpotRateNote">15.0</span> fish per month while actively worked. Larger harvest targets require workers to reach more—and usually farther—spots.
+        </div>
+        <div class="layout-card">
+          <div class="layout-title">
+            <strong>Suggested Hut Placement</strong>
+            <span id="fishLayoutNote">—</span>
+          </div>
+          <div id="fishLayout" aria-label="Suggested fishing hut placement diagram"></div>
         </div>
       </div>
 
@@ -142,13 +173,13 @@ footer{text-align:center;color:#8f8066;font-size:13px;padding:20px 0 5px}
         <div class="section-title">Maximum Sustainable Yield</div>
         <div class="metrics">
           <div class="metric"><div class="label">Buildings</div><div id="fishBuildings" class="value">—</div><div class="unit">fishing huts</div></div>
-          <div class="metric"><div class="label">Families</div><div id="fishFamiliesCard" class="value">—</div><div class="unit">spring / later</div></div>
+          <div class="metric"><div class="label">Families</div><div id="fishFamiliesCard" class="value">—</div><div class="unit">recommended</div></div>
           <div class="metric"><div class="label">Best Setting</div><div id="fishReserve" class="value">—</div><div class="unit">reserve</div></div>
         </div>
         <div class="metrics" style="margin-top:10px">
           <div class="metric"><div class="label">Expected Annual Yield</div><div id="fishAnnual" class="value">—</div><div class="unit">fish / year</div></div>
           <div class="metric"><div class="label">Catch Capacity</div><div id="fishMonthlyCapacity" class="value">—</div><div class="unit">fish / month</div></div>
-          <div class="metric"><div class="label">Fishing Spots</div><div id="fishSpotsMetric" class="value">—</div><div class="unit">available</div></div>
+          <div class="metric"><div class="label">Fishing Spots</div><div id="fishSpotsMetric" class="value">—</div><div class="unit">needed / available</div></div>
         </div>
 
         <div class="strategy">
@@ -168,9 +199,10 @@ footer{text-align:center;color:#8f8066;font-size:13px;padding:20px 0 5px}
         </table>
         <div class="note">
           Fish reproduce only on March 1, April 1 and May 1. Each spawn adds 40% of the current stock,
-          rounded up, up to the node's cap. If catch capacity can clear each spring spawn, the planner uses
-          the biological reserve (cap ÷ 1.4). If it cannot, the reserve is adjusted with the consecutive-spawn
-          catch-limit formula. The remaining May surplus can be harvested after the final spring spawn.
+          rounded up, up to the node's cap. The ideal biological reserve is cap ÷ 1.4 (about 71.4%), which
+          maximizes each spring spawn. The planner calculates how many fishing spots must be worked to clear
+          the spring growth before the next spawn, then converts that workload into a tested staffing recommendation.
+          Recommendations include practical headroom for normal worker interruptions that vary by settlement.
         </div>
       </div>
     </div>
@@ -427,9 +459,93 @@ function bestFishReserve(cap, monthlyCatchCapacity){
   };
 }
 
+function renderFishingLayout(type,quality,huts,families){
+  const target=$('fishLayout');
+  const isRich=quality==='rich';
+  const hutCount=Math.max(1,huts);
+
+  const hut=(x,y,scale=1)=>`<g transform="translate(${x} ${y}) scale(${scale})">
+    <path class="layout-hut-roof" d="M-18 0 L0 -15 L18 0 L14 3 L0 -8 L-14 3 Z"/>
+    <rect class="layout-hut-body" x="-13" y="1" width="26" height="20" rx="1"/>
+    <rect class="layout-hut-door" x="-4" y="9" width="8" height="12"/>
+  </g>`;
+
+  if(type==='pond'){
+    // Round pond. Fishing spots sit on the shoreline; suggested huts sit
+    // on a larger outer ring so they stay clearly on land.
+    const cx=300, cy=174;
+    const spotRadius=119;
+    const hutRadius=157;
+    const spotAngles=Array.from({length:11},(_,i)=>-90+(360/11)*i);
+    const spots=spotAngles.map(a=>{
+      const r=a*Math.PI/180, x=cx+spotRadius*Math.cos(r), y=cy+spotRadius*Math.sin(r);
+      return `<circle class="layout-spot" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="7"/><circle class="layout-spot-core" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.5"/>`;
+    }).join('');
+    const hutAngles=hutCount===1
+      ? [-90]
+      : Array.from({length:hutCount},(_,i)=>-90+(360/hutCount)*i);
+    const hutsSvg=hutAngles.map(a=>{
+      const r=a*Math.PI/180, x=cx+hutRadius*Math.cos(r), y=cy+hutRadius*Math.sin(r);
+      return hut(x.toFixed(1),y.toFixed(1),.95);
+    }).join('');
+    target.innerHTML=`<svg viewBox="0 0 600 430" role="img" aria-label="Round pond with eleven fishing spots and suggested hut locations">
+      <circle class="layout-bank" cx="${cx}" cy="${cy}" r="128"/>
+      <circle class="layout-water" cx="${cx}" cy="${cy}" r="119"/>
+      ${spots}${hutsSvg}
+      <text class="layout-label" x="${cx}" y="${cy+5}" text-anchor="middle">POND</text>
+     <rect class="layout-legend-box" x="157" y="357" width="286" height="36" rx="5"/>
+
+${hut(194,372,.48)}
+<text class="layout-legend-text" x="218" y="378">Fishing Hut</text>
+
+<circle class="layout-spot" cx="330" cy="374" r="6"/>
+<circle class="layout-spot-core" cx="330" cy="374" r="2.2"/>
+<text class="layout-legend-text" x="344" y="378">Fishing Spot</text>
+
+<text class="layout-caption" x="300" y="416" text-anchor="middle">${isRich?'Spread one hut per recommended family around a rich pond.':'On a regular pond, up to two families can share each well-placed hut.'}</text>
+    </svg>`;
+ }else{
+    const xs=[92,176,260,344,428,512];
+    const spots=xs.map(x=>`<circle class="layout-spot" cx="${x}" cy="217" r="7"/><circle class="layout-spot-core" cx="${x}" cy="217" r="2.5"/>`).join('');
+    // Keep suggested huts evenly distributed along the bank for either
+    // quality. This is a placement illustration, not an ownership mapping
+    // between individual huts and fishing spots.
+    const left=82, right=518;
+    const hutXs=hutCount===1
+      ? [300]
+      : Array.from({length:hutCount},(_,i)=>left+(right-left)*(i/(hutCount-1)));
+    const hutsSvg=hutXs.map(x=>hut(x,84,.95)).join('');
+
+    target.innerHTML=`<svg viewBox="0 0 600 410" role="img" aria-label="River or lake edge with six fishing spots and suggested hut locations">
+      <path class="layout-bank" d="M30 135 C135 121 210 145 302 132 C388 120 466 145 570 130"/>
+      <path class="layout-water" d="M24 143 C130 126 210 153 301 140 C392 127 472 153 576 137 L576 259 C468 273 392 247 301 260 C206 273 130 246 24 263 Z"/>
+
+      ${spots}${hutsSvg}
+
+      <text class="layout-label" x="300" y="192" text-anchor="middle">RIVER / LAKE</text>
+
+      <rect class="layout-legend-box" x="157" y="315" width="286" height="36" rx="5"/>
+
+     ${hut(194,333,.48)}
+<text class="layout-legend-text" x="218" y="336">Fishing Hut</text>
+
+<circle class="layout-spot" cx="330" cy="332" r="6"/>
+<circle class="layout-spot-core" cx="330" cy="332" r="2.2"/>
+<text class="layout-legend-text" x="344" y="336">Fishing Spot</text>
+
+      <text class="layout-caption" x="300" y="389" text-anchor="middle">${isRich?'Spread one hut per recommended family along the fishing area.':'On a regular node, up to two families can share each well-placed hut.'}</text>
+    </svg>`;
+  }
+
+  $('fishLayoutNote').textContent=isRich
+    ? `${hutCount} hut${hutCount===1?'':'s'} · ${families} famil${families===1?'y':'ies'} · rich node`
+    : `${hutCount} hut${hutCount===1?'':'s'} · ${families} famil${families===1?'y':'ies'} · regular node`;
+}
+
 function renderFishing(){
   const cap=Math.max(2,Math.floor(Number($('fishCap').value)||2));
   const type=$('fishType').value;
+  const quality=$('fishQuality').value;
   const spots=type==='pond'?GAME.fishing.pondSpots:GAME.fishing.riverSpots;
 
   const origin=getOrigin();
@@ -443,27 +559,22 @@ function renderFishing(){
   $('fishSpotRateNote').textContent=GAME.fishing.catchPerSpotPerMonth.toFixed(1);
 
   $('fishMonthlyCapacity').textContent=Math.round(fullNodeMonthlyCapacity);
-  $('fishSpotsMetric').textContent=spots;
 
   const maxSpringHarvestNeeded=Math.max(...best.rows.slice(0,2).map(r=>r.caught));
 
+  // First determine the number of fishing spots that must be actively worked.
+  // This is driven by the biological spring harvest target, not by total spots.
   const spotsNeeded=Math.max(
     1,
-    Math.min(
-      spots,
-      Math.ceil(maxSpringHarvestNeeded / catchPerSpotPerMonth)
-    )
+    Math.min(spots,Math.ceil(maxSpringHarvestNeeded / catchPerSpotPerMonth))
   );
 
-  let springFamilies=Math.ceil(spotsNeeded / GAME.fishing.peoplePerFamily);
-
-  // When spring harvesting is catch-capacity constrained, recommend a third
-  // family as a practical staffing buffer. Six fishing spots may only require
-  // two full families on paper, but family members are not continuously
-  // available for fishing because of travel, hauling and household tasks.
-  if(best.constrained){
-    springFamilies=Math.max(3,springFamilies);
-  }
+  // Practical staffing rule: each family has three members, but the planner
+  // only counts two toward required fishing-spot coverage. The third worker is
+  // deliberate headroom for normal interruptions such as household needs,
+  // illness, burgage work and travel. This avoids adding a whole extra family
+  // when the recommended families already contain spare worker capacity.
+  const springFamilies=Math.max(1,Math.min(5,Math.ceil(spotsNeeded/2)));
 
   const summerFamilies=best.yield>0?1:0;
   const autumnFamilies=best.yield>0?1:0;
@@ -472,25 +583,32 @@ function renderFishing(){
   $('fishSummer').textContent=summerFamilies;
   $('fishAutumn').textContent=autumnFamilies;
 
-  const huts=Math.ceil(springFamilies/3);
+  // Placement recommendation: rich nodes use one family per hut, spread
+  // around the fishing area. Regular nodes can place up to two families in
+  // each well-positioned hut.
+  const huts=quality==='rich' ? springFamilies : Math.max(1,Math.ceil(springFamilies/2));
   $('fishBuildings').textContent=huts;
-  $('fishFamiliesCard').textContent=`${springFamilies} / 1`;
+  $('fishFamiliesCard').textContent=springFamilies;
+  $('fishSpotsMetric').textContent=`${spotsNeeded} / ${spots}`;
+  renderFishingLayout(type,quality,huts,springFamilies);
 
-  const occupiedSpots=Math.min(spots,springFamilies*GAME.fishing.peoplePerFamily);
-  const springMonthlyCapacity=occupiedSpots*catchPerSpotPerMonth;
+  const requiredMonthlyExtraction=maxSpringHarvestNeeded;
 
   $('fishHuts').innerHTML=
-    `<b>${huts} fishing hut${huts===1?'':'s'}</b> with <b>${springFamilies} famil${springFamilies===1?'y':'ies'}</b> `+
-    `provides up to about <b>${Math.round(springMonthlyCapacity)} fish/month</b> of spring catch capacity. `+
-
+    `<b>${springFamilies} famil${springFamilies===1?'y':'ies'} recommended.</b> `+
+    `This node needs about <b>${spotsNeeded} of ${spots} fishing spots</b> actively fished to yield up to `+
+    `<b>${requiredMonthlyExtraction} fish/month</b> between spring spawns. `+
+    `The recommendation counts about two active members per family, leaving roughly one member per family as practical headroom for normal interruptions such as fuel, water, and travel. `+
+    (quality==='rich'
+      ? `<b>Hut placement:</b> use about one Fishing Hut per assigned family and spread them around the fishing area to reduce travel. `
+      : `<b>Hut placement:</b> on a regular node, up to two assigned families can share a well-placed Fishing Hut. `)+
     (best.constrained
-  ? `Catch capacity cannot clear the biological spring surplus before the next spawn, so the planner uses the consecutive-spawn reserve of <b>${best.reserve}</b>. A third spring family is recommended as a practical staffing buffer because all family members are rarely fishing at the same time. `
-  : `Catch capacity can clear each spring spawn back to the biological reserve of <b>${best.reserve}</b>. `)+
-`The largest harvest required before the next spring spawn is <b>${maxSpringHarvestNeeded}</b> fish. `+
-(origin==='strasburg'
-  ? `<b>Strasburg Masons:</b> Fisherman's Hut labor speed is reduced by 20%, so effective catch capacity is reduced accordingly. `
-  : ``)+
-`After the May spawn, drop to 1 family unless you specifically need faster harvesting.`;
+      ? `Even full-node catch capacity cannot completely clear the spring surplus before the next spawn, so the planner uses the consecutive-spawn reserve of <b>${best.reserve}</b>. `
+      : `Full-node catch capacity can return the stock to the reserve of <b>${best.reserve}</b> between spring spawns. `)+
+    (origin==='strasburg'
+      ? `<b>Strasburg Masons:</b> Fisherman's Hut labor speed is reduced by 20%, so effective spot catch capacity is reduced accordingly. `
+      : ``)+
+    `After the May spawn, drop to 1 family unless you specifically need faster harvesting.`;
 
   const names=GAME.fishing.spawnDates;
   $('fishTable').innerHTML=best.rows.map((r,i)=>
@@ -657,7 +775,7 @@ function renderForaging(){
   $('forageChance').textContent=Math.round(w*100)+'%';
 }
 
-['fishType','fishSpecies','fishCap'].forEach(id=>$(id).addEventListener('input',renderFishing));
+['fishType','fishSpecies','fishCap','fishQuality'].forEach(id=>$(id).addEventListener('input',renderFishing));
 ['rabbitCap','huntWoodland'].forEach(id=>$(id).addEventListener('input',renderHunting));
 ['forageType','forageCap','forageWoodland'].forEach(id=>$(id).addEventListener('input',renderForaging));
 $('origin').addEventListener('change',()=>{
