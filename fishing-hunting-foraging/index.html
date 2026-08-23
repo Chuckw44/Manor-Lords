@@ -139,11 +139,8 @@ footer{text-align:center;color:#8f8066;font-size:13px;padding:20px 0 5px}
             </select>
           </div>
           <div>
-            <label for="fishSpecies">Fish</label>
-            <select id="fishSpecies">
-              <option value="carp">Carp</option>
-              <option value="eel">Eel</option>
-            </select>
+            <label>Fish</label>
+            <div id="fishSpeciesDisplay" class="range-value" style="font-size:18px">Carp</div>
           </div>
           <div>
             <label for="fishCap">Node capacity</label>
@@ -535,6 +532,8 @@ function renderFishing(){
   const cap=Math.max(2,Math.floor(Number($('fishCap').value)||2));
   const type=$('fishType').value;
   const quality=$('fishQuality').value;
+  const fishSpecies=(type==='pond' || quality==='regular') ? 'Carp' : 'Eel';
+  $('fishSpeciesDisplay').textContent=fishSpecies;
   const spots=type==='pond'?GAME.fishing.pondSpots:GAME.fishing.riverSpots;
 
   const origin=getOrigin();
@@ -770,7 +769,7 @@ function renderForaging(){
   $('forageChance').textContent=Math.round(w*100)+'%';
 }
 
-['fishType','fishSpecies','fishCap','fishQuality'].forEach(id=>$(id).addEventListener('input',renderFishing));
+['fishType','fishCap','fishQuality'].forEach(id=>$(id).addEventListener('input',renderFishing));
 ['rabbitCap','huntWoodland'].forEach(id=>$(id).addEventListener('input',renderHunting));
 ['forageType','forageCap','forageWoodland'].forEach(id=>$(id).addEventListener('input',renderForaging));
 $('origin').addEventListener('change',()=>{
