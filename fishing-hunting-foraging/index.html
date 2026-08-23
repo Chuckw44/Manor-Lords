@@ -432,19 +432,22 @@ function bestFishReserve(cap, monthlyCatchCapacity){
       stock + Math.ceil(stock*GAME.fishing.spawnGrowthRate)
     );
 
-    let caught;
-    if(i<2){
-      // March and April must be harvested before the next monthly spawn.
-      caught=Math.min(monthlyCatchCapacity,Math.max(0,after-reserve));
-    }else{
-      // After May there is no next spring spawn deadline.
-      caught=Math.max(0,after-reserve);
-    }
+    // No month can exceed the node's actual monthly catch capacity.
+    const caught=Math.min(
+      monthlyCatchCapacity,
+      Math.max(0,after-reserve)
+    );
 
     total+=caught;
     stock=after-caught;
     rows.push({start,after,caught});
   }
+
+  // Anything still above reserve after May can be harvested gradually later
+  // in the year, so include it in expected annual yield without pretending
+  // it was all caught during May.
+  const postMayCleanup=Math.max(0,stock-reserve);
+  total+=postMayCleanup;
 
   return {
     reserve:reserve,
@@ -452,7 +455,8 @@ function bestFishReserve(cap, monthlyCatchCapacity){
     rows:rows,
     constrained:constrained,
     biologicalReserve:biologicalReserve,
-    biologicalSpawn:biologicalSpawn
+    biologicalSpawn:biologicalSpawn,
+    postMayCleanup:postMayCleanup
   };
 }
 
