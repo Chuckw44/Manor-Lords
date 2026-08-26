@@ -144,7 +144,7 @@ footer{text-align:center;color:#8f8066;font-size:13px;padding:20px 0 5px}
           </div>
           <div>
             <label for="fishCap">Node capacity</label>
-            <input id="fishCap" type="number" min="2" step="1" value="354">
+            <input id="fishCap" type="number" min="2" max="500" step="1" value="354">
           </div>
           <div>
             <label for="fishQuality">Node quality</label>
@@ -217,7 +217,7 @@ footer{text-align:center;color:#8f8066;font-size:13px;padding:20px 0 5px}
         <div class="control-grid">
           <div>
             <label for="rabbitCap">Rabbit capacity</label>
-            <input id="rabbitCap" type="number" min="1" step="1" value="18">
+           <input id="rabbitCap" type="number" min="1" max="30" step="1" value="18">
           </div>
           <div>
             <label>Detected node quality</label>
@@ -555,7 +555,8 @@ function renderFishingLayout(type,quality,huts,families){
 }
 
 function renderFishing(){
-  const cap=Math.max(2,Math.floor(Number($('fishCap').value)||2));
+  const cap=Math.min(500,Math.max(2,Math.floor(Number($('fishCap').value)||2)));
+$('fishCap').value=cap;
   const type=$('fishType').value;
   const quality=$('fishQuality').value;
   const fishSpecies=(type==='pond' || quality==='regular') ? 'Carp' : 'Eel';
@@ -627,7 +628,8 @@ function renderFishing(){
 function lerp(a,b,t){return a+(b-a)*Math.max(0,Math.min(1,t));}
 
 function renderHunting(){
-  const cap=Math.max(1,Math.floor(Number($('rabbitCap').value)||1));
+  const cap=Math.min(30,Math.max(1,Math.floor(Number($('rabbitCap').value)||1)));
+$('rabbitCap').value=cap;
   const w=Number($('huntWoodland').value)/100;
   const origin=getOrigin();
   $('huntWoodlandValue').textContent=Math.round(w*100)+'%';
