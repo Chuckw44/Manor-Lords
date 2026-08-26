@@ -283,7 +283,7 @@ footer{text-align:center;color:#8f8066;font-size:13px;padding:20px 0 5px}
             </select>
           </div>
           <div>
-            <label for="forageCap">Node capacity</label>
+            <label for="forageCap">Current node capacity</label>
             <input id="forageCap" type="number" min="1" step="1" value="65">
           </div>
         </div>
@@ -295,8 +295,8 @@ footer{text-align:center;color:#8f8066;font-size:13px;padding:20px 0 5px}
           </div>
         </div>
         <div class="note">
-          Foraging growth: 1/9 of capacity every 10 days for 180 days. Teeming adds a chance for +1 additional
-          resource per growth event, equal to Woodland Environment.
+          Foraging growth: 1/9 of current capacity on March 1, then every 10 days for 180 days — 19 growth events total.
+          Teeming adds a chance for +1 additional resource per growth event, equal to Woodland Environment.
         </div>
 
         <div class="section-title" style="margin-top:22px">Herb Garden Addition</div>
@@ -331,7 +331,7 @@ footer{text-align:center;color:#8f8066;font-size:13px;padding:20px 0 5px}
         <div class="metrics">
           <div class="metric"><div class="label">Buildings</div><div id="forageBuildings" class="value">1</div><div id="forageBuildingsUnit" class="unit">forager hut</div></div>
           <div class="metric"><div class="label">Families</div><div id="forageFamiliesMetric" class="value">1</div><div class="unit">recommended</div></div>
-          <div class="metric"><div class="label">Effective Capacity</div><div id="forageEffectiveCap" class="value">—</div><div class="unit">after Origin</div></div>
+          <div class="metric"><div class="label">Annual Spawns</div><div id="forageSpawnEvents" class="value">19</div><div class="unit">growth events</div></div>
         </div>
         <div class="metrics" style="margin-top:10px">
           <div class="metric"><div class="label">Annual Growth</div><div id="forageBase" class="value">—</div><div id="forageGrowthUnit" class="unit">— per 10-day spawn</div></div>
@@ -351,8 +351,8 @@ footer{text-align:center;color:#8f8066;font-size:13px;padding:20px 0 5px}
         </div>
 
         <table>
-          <thead><tr><th>Growth Events</th><th>Base / Spawn</th><th>Teeming Chance</th></tr></thead>
-          <tbody><tr><td>19</td><td id="foragePerTick">—</td><td id="forageChance">—</td></tr></tbody>
+          <thead><tr><th>Growth Season</th><th>Growth Interval</th><th>Teeming Chance</th></tr></thead>
+          <tbody><tr><td id="forageGrowthSeason">180 days</td><td id="forageGrowthInterval">10 days</td><td id="forageChance">—</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -748,24 +748,26 @@ function renderForaging(){
   const origin=getOrigin();
   $('forageWoodlandValue').textContent=Math.round(w*100)+'%';
 
-  // Vogtland doubles the deposit capacity for wild berries and mushrooms.
-  const cap=origin==='vogtland' ? rawCap*GAME.origins.vogtland.forageCapacityMultiplier : rawCap;
-  $('forageEffectiveCap').textContent=Math.round(cap);
+  // The player enters the CURRENT in-game capacity directly.
+  // Do not modify it again for Origin effects.
+  const cap=rawCap;
 
+  // March 1 is the first growth event, followed by another every 10 days.
+  // 180 / 10 gives the intervals; +1 counts the March 1 event itself.
   const events=(GAME.foraging.growthSeasonDays/GAME.foraging.growthIntervalDays)+1;
   const perEvent=cap*GAME.foraging.growthFractionOfCapacity;
   const base=perEvent*events;
   const bonus=events*w*GAME.foraging.teemingExtraPerGrowthEvent;
   const total=base+bonus;
 
-  // Staffing rule from current testing:
-  // One family is enough unless Of the Vogtland doubles a rich forage node.
-  // Keep the normal recommendation at one well-placed Forager Hut even when
-  // two families are assigned. A second hut is optional for more Herbs or
-  // when Granary workers cannot empty the hut pantry quickly enough.
+  // Staffing is based on the entered CURRENT capacity, not on which Origin
+  // produced that capacity. The former Vogtland-rich rule was equivalent to
+  // a rich-node threshold after the 2x capacity increase, so use that same
+  // effective threshold directly.
   const staffing=GAME.foraging.staffing;
-  const isRichNode = rawCap >= staffing.richCapacityThreshold;
-  const forageFamilies = (origin==='vogtland' && isRichNode)
+  const twoFamilyCapacityThreshold =
+    staffing.richCapacityThreshold * GAME.origins.vogtland.forageCapacityMultiplier;
+  const forageFamilies = cap >= twoFamilyCapacityThreshold
     ? staffing.richVogtlandFamilies
     : staffing.normalFamilies;
   const forageHuts=1;
@@ -783,15 +785,17 @@ function renderForaging(){
   $('forageAutumnUnit').textContent=autumnFamilies===1?'family':'families';
 
   $('forageStaffingNote').innerHTML = forageFamilies===2
-    ? `<b>2 families / 1 hut recommended for Spring and Summer.</b> Of the Vogtland doubles this rich node enough that one family may not keep up. Drop to <b>1 family in Autumn</b> for Herbs. Build and staff another Forager Hut if you want more Herb production, or if your Granary cannot empty the hut pantry fast enough.`
-    : `<b>1 family / 1 hut recommended.</b> One family can handle normal Berry and Mushroom nodes. Keep the hut staffed in Autumn for Herbs. Build and staff another Forager Hut if you want more Herb production, or if your Granary cannot empty the hut pantry fast enough.`;
+    ? `<b>2 families / 1 hut recommended for Spring and Summer.</b> At the entered node capacity, one family may not keep up with the 10-day spawns. Drop to <b>1 family in Autumn</b> for Herbs. Build and staff another Forager Hut if you want more Herb production, or if your Granary cannot empty the hut pantry fast enough.`
+    : `<b>1 family / 1 hut recommended.</b> One family can handle this Berry or Mushroom node at the entered capacity. Keep the hut staffed in Autumn for Herbs. Build and staff another Forager Hut if you want more Herb production, or if your Granary cannot empty the hut pantry fast enough.`;
 
   const perSpawnLabel = Number.isInteger(perEvent) ? String(perEvent) : perEvent.toFixed(1);
+  $('forageSpawnEvents').textContent=events;
+  $('forageGrowthSeason').textContent=`${GAME.foraging.growthSeasonDays} days`;
+  $('forageGrowthInterval').textContent=`${GAME.foraging.growthIntervalDays} days`;
   $('forageBase').textContent=Math.round(base);
   $('forageGrowthUnit').textContent=`${perSpawnLabel} per 10-day spawn`;
   $('forageBonus').textContent=bonus.toFixed(1);
   $('forageTotal').textContent=Math.round(total);
-  $('foragePerTick').textContent=perSpawnLabel;
   $('forageChance').textContent=Math.round(w*100)+'%';
 }
 
