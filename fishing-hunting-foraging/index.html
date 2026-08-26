@@ -752,7 +752,7 @@ function renderForaging(){
   const cap=origin==='vogtland' ? rawCap*GAME.origins.vogtland.forageCapacityMultiplier : rawCap;
   $('forageEffectiveCap').textContent=Math.round(cap);
 
-  const events=GAME.foraging.growthSeasonDays/GAME.foraging.growthIntervalDays;
+  const events=(GAME.foraging.growthSeasonDays/GAME.foraging.growthIntervalDays)+1;
   const perEvent=cap*GAME.foraging.growthFractionOfCapacity;
   const base=perEvent*events;
   const bonus=events*w*GAME.foraging.teemingExtraPerGrowthEvent;
