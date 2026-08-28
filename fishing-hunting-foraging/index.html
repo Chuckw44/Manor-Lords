@@ -556,7 +556,6 @@ function renderFishingLayout(type,quality,huts,families){
 
 function renderFishing(){
   const cap=Math.min(500,Math.max(2,Math.floor(Number($('fishCap').value)||2)));
-$('fishCap').value=cap;
   const type=$('fishType').value;
   const quality=$('fishQuality').value;
   const fishSpecies=(type==='pond' || quality==='regular') ? 'Carp' : 'Eel';
@@ -629,7 +628,6 @@ function lerp(a,b,t){return a+(b-a)*Math.max(0,Math.min(1,t));}
 
 function renderHunting(){
   const cap=Math.min(30,Math.max(1,Math.floor(Number($('rabbitCap').value)||1)));
-$('rabbitCap').value=cap;
   const w=Number($('huntWoodland').value)/100;
   const origin=getOrigin();
   $('huntWoodlandValue').textContent=Math.round(w*100)+'%';
@@ -746,7 +744,6 @@ $('rabbitCap').value=cap;
 // ---------- Foraging ----------
 function renderForaging(){
   const rawCap=Math.min(400,Math.max(1,Number($('forageCap').value)||1));
-$('forageCap').value=rawCap;
   const w=Number($('forageWoodland').value)/100;
   const origin=getOrigin();
   $('forageWoodlandValue').textContent=Math.round(w*100)+'%';
@@ -802,9 +799,26 @@ $('forageCap').value=rawCap;
   $('forageChance').textContent=Math.round(w*100)+'%';
 }
 
+function clampNumberField(id,min,max,renderFn){
+  const el=$(id);
+  const commit=()=>{
+    let value=Number(el.value);
+    if(!Number.isFinite(value)) value=min;
+    value=Math.floor(value);
+    value=Math.min(max,Math.max(min,value));
+    el.value=value;
+    renderFn();
+  };
+  el.addEventListener('change',commit);
+  el.addEventListener('blur',commit);
+}
+
 ['fishType','fishCap','fishQuality'].forEach(id=>$(id).addEventListener('input',renderFishing));
 ['rabbitCap','huntWoodland'].forEach(id=>$(id).addEventListener('input',renderHunting));
 ['forageType','forageCap','forageWoodland'].forEach(id=>$(id).addEventListener('input',renderForaging));
+clampNumberField('fishCap',2,500,renderFishing);
+clampNumberField('rabbitCap',1,30,renderHunting);
+clampNumberField('forageCap',1,400,renderForaging);
 $('origin').addEventListener('change',()=>{
   renderOriginRecommendation();
   renderFishing();
