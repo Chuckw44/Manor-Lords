@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Visual Aides — Manor Lords Community Tools</title>
+<style>
+:root{
+  --bg:#171512;
+  --paper:#efe2c3;
+  --paper2:#dec49b;
+  --wood:#6f532f;
+  --gold:#b58a3a;
+  --ink:#2d2016;
+  --red:#6e2d25;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  padding:20px;
+  min-height:100vh;
+  font-family:Georgia,serif;
+  background:
+    radial-gradient(circle at top,rgba(255,255,255,.05),transparent 35%),
+    repeating-linear-gradient(90deg,#171512 0 18px,#1c1915 18px 36px);
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+}
+.frame{
+  width:min(1100px,95vw);
+  background:linear-gradient(var(--paper),var(--paper2));
+  border:3px solid var(--wood);
+  padding:34px;
+  box-shadow:0 18px 40px rgba(0,0,0,.55);
+  color:var(--ink);
+}
+.topbar{
+  display:flex;
+  justify-content:flex-start;
+  margin-bottom:18px;
+}
+.home{
+  display:inline-block;
+  text-decoration:none;
+  color:var(--ink);
+  border:1px solid #8b6940;
+  background:linear-gradient(#f6ead1,#e5cfaa);
+  padding:9px 14px;
+  font-size:15px;
+}
+.home:hover{
+  border-color:var(--gold);
+  box-shadow:0 4px 10px rgba(0,0,0,.15);
+}
+h1{
+  margin:0;
+  text-align:center;
+  font-size:54px;
+  font-weight:500;
+}
+h2{
+  margin:6px 0 16px;
+  text-align:center;
+  color:var(--red);
+  letter-spacing:.22em;
+  font-weight:500;
+}
+.intro{
+  max-width:760px;
+  margin:0 auto 28px;
+  text-align:center;
+  font-size:17px;
+  line-height:1.45;
+}
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(270px,1fr));
+  gap:22px;
+}
+.card{
+  display:block;
+  text-decoration:none;
+  color:inherit;
+  background:linear-gradient(#f6ead1,#e5cfaa);
+  border:2px solid #8b6940;
+  overflow:hidden;
+  transition:.15s;
+}
+.card:hover{
+  transform:translateY(-4px);
+  box-shadow:0 8px 18px rgba(0,0,0,.25);
+  border-color:var(--gold);
+}
+.thumb{
+  width:100%;
+  aspect-ratio:16/10;
+  background:rgba(77,52,31,.08);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  border-bottom:1px solid #ad8d64;
+}
+.thumb img{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  display:block;
+  background:#d9c39d;
+}
+.card-body{
+  padding:18px 18px 20px;
+}
+.title{
+  text-align:center;
+  font-size:24px;
+  font-weight:bold;
+}
+.rule{
+  width:70px;
+  height:1px;
+  background:#a37b46;
+  margin:10px auto;
+}
+.desc{
+  text-align:center;
+  line-height:1.4;
+  font-size:15px;
+  color:#4f3827;
+}
+.empty{
+  display:none;
+  text-align:center;
+  border:1px solid #9a794f;
+  background:rgba(255,255,255,.18);
+  padding:26px;
+  font-size:17px;
+  line-height:1.5;
+}
+footer{
+  margin-top:30px;
+  text-align:center;
+  color:#5b4430;
+  font-size:14px;
+}
+@media(max-width:600px){
+  body{padding:10px}
+  .frame{padding:22px 16px}
+  h1{font-size:40px}
+  h2{font-size:17px;letter-spacing:.15em}
+}
+</style>
+</head>
+<body>
+<div class="frame">
+
+<div class="topbar">
+  <a class="home" href="../">← Community Tools</a>
+</div>
+
+<h1>Visual Aides</h1>
+<h2>MANOR LORDS REFERENCE</h2>
+<p class="intro">
+  A collection of infographics for various Manor Lords mechanics.
+</p>
+
+<div id="visualGrid" class="grid"></div>
+
+<div id="emptyState" class="empty">
+  No visual aides have been added yet.
+</div>
+
+<footer>
+  Created by <strong>ChuckW44</strong> · Unofficial Manor Lords fan reference
+</footer>
+
+</div>
+
+<script>
+/*
+  ADDING A NEW VISUAL
+  -------------------
+  1. Put the image in this same "visual-aides" folder.
+  2. Add ONE line to the list below.
+
+  Format:
+  { file: "your-image.png", title: "Your Title", desc: "Optional short description." },
+
+  If you leave out title, the page creates one from the filename.
+  If you leave out desc, no description is shown.
+
+  Example:
+  { file: "burgage-plot-requirements.png", title: "Burgage Plot Requirements" },
+*/
+
+const visuals = [
+  // Add new visual aides here:
+  { file: "burgage-plot-requirements.png", title: "Burgage Plot Requirements" },
+];
+
+function titleFromFilename(filename){
+  return filename
+    .replace(/\.[^.]+$/, "")
+    .replace(/[-_]+/g, " ")
+    .replace(/\b\w/g, c => c.toUpperCase());
+}
+
+const grid = document.getElementById("visualGrid");
+const emptyState = document.getElementById("emptyState");
+
+if (!visuals.length) {
+  emptyState.style.display = "block";
+} else {
+  visuals.forEach(item => {
+    const title = item.title || titleFromFilename(item.file);
+    const desc = item.desc || "";
+
+    const card = document.createElement("a");
+    card.className = "card";
+    card.href = item.file;
+    card.target = "_blank";
+    card.rel = "noopener";
+
+    const thumb = document.createElement("div");
+    thumb.className = "thumb";
+
+    const img = document.createElement("img");
+    img.src = item.file;
+    img.alt = title;
+    img.loading = "lazy";
+    thumb.appendChild(img);
+
+    const body = document.createElement("div");
+    body.className = "card-body";
+
+    const titleEl = document.createElement("div");
+    titleEl.className = "title";
+    titleEl.textContent = title;
+
+    const rule = document.createElement("div");
+    rule.className = "rule";
+
+    body.appendChild(titleEl);
+    body.appendChild(rule);
+
+    if (desc) {
+      const descEl = document.createElement("div");
+      descEl.className = "desc";
+      descEl.textContent = desc;
+      body.appendChild(descEl);
+    }
+
+    card.appendChild(thumb);
+    card.appendChild(body);
+    grid.appendChild(card);
+  });
+}
+</script>
+
+</body>
+</html>
