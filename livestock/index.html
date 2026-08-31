@@ -554,7 +554,6 @@ function getStrategy(){return document.querySelector('input[name="strategy"]:che
 const GAME = {
   version: MANOR_LORDS_DATA.gameVersion,
   common: {
-    breedChancePerRoll: MANOR_LORDS_DATA.livestock.common.breedChancePerRoll,
     breedRollIntervalDays: MANOR_LORDS_DATA.livestock.common.breedRollIntervalDays,
     breedSeasonDays: MANOR_LORDS_DATA.livestock.common.breedSeasonDays,
     feedPerOat: MANOR_LORDS_DATA.livestock.common.feedPerOat,
@@ -569,7 +568,10 @@ const GAME = {
 // ============================================================
 
 const BREED_ROLLS = Math.floor(GAME.common.breedSeasonDays / GAME.common.breedRollIntervalDays);
-const BREED_CHANCE = 1 - Math.pow(1 - GAME.common.breedChancePerRoll, BREED_ROLLS);
+const BREED_CHANCE = {
+  cow: 1 - Math.pow(1 - GAME.cow.breedChancePerRoll, BREED_ROLLS),
+  sheep: 1 - Math.pow(1 - GAME.sheep.breedChancePerRoll, BREED_ROLLS)
+};
 
 function cowMilk(m){
   const c=GAME.cow;
@@ -590,6 +592,8 @@ const DATA = {
     name:'Cow', plural:'Cows', youngName:'Calves',
     primary:'Milk', primaryIcon:'🥛', primaryAnnual:cowMilk,
     offspringName:'Calves', offspringIcon:'🐄',
+    breedChancePerRoll:GAME.cow.breedChancePerRoll,
+    breedChance:BREED_CHANCE.cow,
 
     feed:GAME.cow.adultWinterFeed,
     oats:oatsForFeed(GAME.cow.adultWinterFeed),
@@ -617,7 +621,7 @@ const DATA = {
 
     about:[
       `Cows produce milk each month for ${GAME.cow.milkMonthsPerYear} months in Spring and Summer.`,
-      `${Math.round(GAME.common.breedChancePerRoll*100)}% chance to breed every ${GAME.common.breedRollIntervalDays} days for ${GAME.common.breedSeasonDays} days in summer.`,
+      `${Math.round(GAME.cow.breedChancePerRoll*100)}% chance to breed every ${GAME.common.breedRollIntervalDays} days for ${GAME.common.breedSeasonDays} days in summer.`,
       `Calves give ${GAME.cow.calfBeef} Beef and ${GAME.cow.calfHides} Hide; adult cows give ${GAME.cow.adultBeef} Beef and ${GAME.cow.adultHides} Hides.`,
       `Calves take ${GAME.cow.maturityYears} years to mature into adult cows.`,
       `${GAME.cow.adultWinterFeed} feed (${oatsForFeed(GAME.cow.adultWinterFeed)} oats) needed per winter per adult cow.`,
@@ -632,6 +636,8 @@ const DATA = {
     name:'Sheep', plural:'Sheep', youngName:'Lambs',
     primary:'Wool', primaryIcon:'🧶', primaryAnnual:sheepWool,
     offspringName:'Lambs', offspringIcon:'🐑',
+    breedChancePerRoll:GAME.sheep.breedChancePerRoll,
+    breedChance:BREED_CHANCE.sheep,
 
     feed:GAME.sheep.adultWinterFeed,
     oats:oatsForFeed(GAME.sheep.adultWinterFeed),
@@ -659,7 +665,7 @@ const DATA = {
 
     about:[
       `Sheep produce ${GAME.sheep.woolBasePerYear} base Wool per year with a chance for +${GAME.sheep.woolMeadowBonus} from Meadow.`,
-      `${Math.round(GAME.common.breedChancePerRoll*100)}% chance to breed every ${GAME.common.breedRollIntervalDays} days for ${GAME.common.breedSeasonDays} days in autumn.`,
+      `${Math.round(GAME.sheep.breedChancePerRoll*100)}% chance to breed every ${GAME.common.breedRollIntervalDays} days for ${GAME.common.breedSeasonDays} days in autumn.`,
       `Lambs give ${GAME.sheep.lambMutton} Mutton; adult sheep give ${GAME.sheep.adultMutton} Mutton and ${GAME.sheep.adultHides} Hide.`,
       `Lambs take ${GAME.sheep.maturityYears} year to mature into adult sheep.`,
       `${GAME.sheep.adultWinterFeed} feed (${oatsForFeed(GAME.sheep.adultWinterFeed)} oats) needed per winter per adult sheep.`,
@@ -679,8 +685,8 @@ function getResourceList(d){
   const y=strategy==='adult'?d.adultYield:d.youngYield;
   return [
     {name:d.primary,icon:d.primaryIcon,annual:m=>d.primaryAnnual(m)},
-    {name:d.meat,icon:'🥩',annual:m=>BREED_CHANCE*y.meat},
-    {name:'Hides',icon:'🟫',annual:m=>BREED_CHANCE*y.hides}
+    {name:d.meat,icon:'🥩',annual:m=>d.breedChance*y.meat},
+    {name:'Hides',icon:'🟫',annual:m=>d.breedChance*y.hides}
   ];
 }
 function refreshResources(d){
@@ -719,7 +725,7 @@ function render(){
   document.getElementById('annualNote').textContent=`At ${m}% meadow`;
 
   document.getElementById('offspringIcon').textContent=d.offspringIcon;
-  document.getElementById('offspring').textContent=fmt(BREED_CHANCE);
+  document.getElementById('offspring').textContent=fmt(d.breedChance);
   document.getElementById('offspringUnit').textContent=d.offspringName+' / year';
   document.getElementById('feed').textContent=d.feed;
   document.getElementById('feedNote').textContent=`(${d.oats} oats) per ${d.name.toLowerCase()}`;
@@ -748,11 +754,11 @@ function render(){
       ? `Current strategy: butcher ${d.youngName.toLowerCase()} immediately.`
       : `Current strategy: raise offspring to adulthood. Adult output assumes a mature established herd; ${d.youngName.toLowerCase()} take ${d.maturityYears} year${d.maturityYears===1?'':'s'} to mature.`;
 
-  const extraFeedPerBreeder=strategy==='adult' ? BREED_CHANCE*d.maturityYears*d.youngFeed : 0;
+  const extraFeedPerBreeder=strategy==='adult' ? d.breedChance*d.maturityYears*d.youngFeed : 0;
   const summaryRows=[
     [d.primaryIcon,d.primary,d.primaryAnnual(m),2],
-    ['🥩',d.meat+' ('+(strategy==='adult'?'adult':'young')+' strategy)',BREED_CHANCE*activeYield.meat,2],
-    ['🟫','Hides ('+(strategy==='adult'?'adult':'young')+' strategy)',BREED_CHANCE*activeYield.hides,2],
+    ['🥩',d.meat+' ('+(strategy==='adult'?'adult':'young')+' strategy)',d.breedChance*activeYield.meat,2],
+    ['🟫','Hides ('+(strategy==='adult'?'adult':'young')+' strategy)',d.breedChance*activeYield.hides,2],
     ['🌾','Avg Winter Feed burden',d.feed+extraFeedPerBreeder,2]
   ];
   document.getElementById('summary').innerHTML=summaryRows.map(r=>
@@ -763,8 +769,8 @@ function render(){
   document.getElementById('aboutTitle').textContent='ABOUT '+d.plural.toUpperCase();
   document.getElementById('aboutList').innerHTML=d.about.map(x=>`<li>${x}</li>`).join('');
   document.getElementById('breedSeason').innerHTML=`Offspring are born in ${d.birthSeason}.<br><br>Breeding rolls occur in ${d.breedingSeason}.<br><br>Each animal can produce a maximum of one offspring per breeding season.`;
-  document.getElementById('breedChance').textContent=(BREED_CHANCE*100).toFixed(2)+'%';
-  document.getElementById('offspringSmall').textContent=fmt(BREED_CHANCE);
+  document.getElementById('breedChance').textContent=(d.breedChance*100).toFixed(2)+'%';
+  document.getElementById('offspringSmall').textContent=fmt(d.breedChance);
 
   document.getElementById('econImport').textContent=`${d.importBase} + ${d.tradeCost} RW`;
   document.getElementById('econFeed').textContent=`${d.feed} Feed`;
@@ -782,7 +788,7 @@ function render(){
   herdSizeEl.value=herdSize;
 
   const herdPrimaryTotal=herdSize*d.primaryAnnual(m);
-  const herdOffspringTotal=herdSize*BREED_CHANCE;
+  const herdOffspringTotal=herdSize*d.breedChance;
 
   // Slaughter products must come from the same whole-animal count.
   // This preserves the exact per-animal output bundle instead of
@@ -805,7 +811,7 @@ function render(){
   // In a mature steady-state herd, each year's births create a pipeline of young animals.
   // Cows: calves take 2 years, so two average calf cohorts are being raised.
   // Sheep: lambs take 1 year, so one average lamb cohort is being raised.
-  const expectedYoungPerYear=herdSize*BREED_CHANCE;
+  const expectedYoungPerYear=herdSize*d.breedChance;
   // Feed planning uses whole animals: round the expected young population
   // to the nearest calf/lamb before applying the per-young feed requirement.
   const youngInPipeline=strategy==='adult'
@@ -898,7 +904,7 @@ document.querySelectorAll('[data-game-version]').forEach(function(el){
       <h3 style="color:#f0d189;margin:0 0 10px">Breeding Information</h3>
       <div class="breed-grid">
         <div class="breed-item">
-          <div>5% chance to breed<br>every 10 days<br>for 90 days</div>
+          <div id="breedRollModal">5% chance to breed<br>every 10 days<br>for 90 days</div>
         </div>
         <div class="breed-item">
           <div>Chance of at least<br>one offspring:</div>
@@ -946,6 +952,8 @@ document.querySelectorAll('[data-game-version]').forEach(function(el){
     if(bc) document.getElementById('breedChanceModal').textContent=bc.textContent;
     if(os) document.getElementById('offspringSmallModal').textContent=os.textContent;
     if(bs) document.getElementById('breedSeasonModal').innerHTML=bs.innerHTML;
+    const br=document.getElementById('breedRollModal');
+    if(br && d) br.innerHTML=Math.round(d.breedChancePerRoll*100)+'% chance to breed<br>every '+GAME.common.breedRollIntervalDays+' days<br>for '+GAME.common.breedSeasonDays+' days';
   }
 
   btn.addEventListener('click',()=>{refreshAbout();modal.style.display='flex';});
@@ -974,8 +982,8 @@ document.querySelectorAll('[data-game-version]').forEach(function(el){
 
     const products=[
       {name:d.primary, icon:d.primaryIcon, rate:d.primaryAnnual(m)},
-      {name:d.meat, icon:'🥩', rate:BREED_CHANCE*activeYield.meat},
-      {name:'Hides', icon:'🟫', rate:BREED_CHANCE*activeYield.hides}
+      {name:d.meat, icon:'🥩', rate:d.breedChance*activeYield.meat},
+      {name:'Hides', icon:'🟫', rate:d.breedChance*activeYield.hides}
     ];
 
     products.forEach((p,i)=>{
@@ -1030,7 +1038,7 @@ document.querySelectorAll('[data-game-version]').forEach(function(el){
 
     if(!d) return;
 
-    document.getElementById('setupBreedChance').textContent=(BREED_CHANCE*100).toFixed(2)+'%';
+    document.getElementById('setupBreedChance').textContent=(d.breedChance*100).toFixed(2)+'%';
     document.getElementById('setupBirthSeason').textContent=
       d.birthSeason.charAt(0).toUpperCase()+d.birthSeason.slice(1);
     document.getElementById('setupSeason').textContent=
