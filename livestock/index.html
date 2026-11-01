@@ -271,6 +271,10 @@ footer{text-align:center;color:#8f8066;font-size:13px;padding:16px 0 3px}
   margin:0 !important;
   flex:0 0 90px;
 }
+.perk-controls{margin-top:15px;padding-top:12px;border-top:1px solid var(--line)}
+.perk-option{display:flex;align-items:flex-start;gap:9px;margin-top:9px;color:var(--text);cursor:pointer}
+.perk-option input{width:18px;height:18px;margin:1px 0 0;accent-color:#78963f}
+.perk-option span{line-height:1.35}
 @media(max-width:600px){
   .feed-feature .feed-input-row{
     flex-wrap:wrap;
@@ -354,11 +358,18 @@ footer{text-align:center;color:#8f8066;font-size:13px;padding:16px 0 3px}
     <div class="setup-breeding">
       <div class="label">BREEDING PROFILE</div>
       <div class="setup-breed-grid" style="margin-top:8px">
-        <div class="setup-breed-item">Chance / year<strong id="setupBreedChance">36.98%</strong></div>
+        <div class="setup-breed-item">Chance / year<strong id="setupBreedChance">40.00%</strong></div>
         <div class="setup-breed-item">Birth season<strong id="setupBirthSeason">Spring</strong></div>
         <div class="setup-breed-item">Breeding season<strong id="setupSeason">Summer</strong></div>
         <div class="setup-breed-item">Maturity<strong id="setupMaturity">2 years</strong></div>
       </div>
+    </div>
+
+    <div class="perk-controls">
+      <div class="label">LIVESTOCK PERKS</div>
+      <label class="perk-option" id="cowPerkRow"><input id="livestockProvisioning" type="checkbox"><span><b>Livestock Provisioning</b><br><small>Raises Cow reproduction success from 40% to 55%.</small></span></label>
+      <label class="perk-option" id="sheepPerkRow" style="display:none"><input id="pastoralPractice" type="checkbox"><span><b>Pastoral Practice</b><br><small>Raises Sheep reproduction success from 40% to 70%.</small></span></label>
+      <label class="perk-option" id="alpsRow" style="display:none"><input id="alpsHighElevation" type="checkbox"><span><b>Apply high-elevation Alps bonus</b><br><small>Requires Born of the Alps and Sheep pastured at high elevation. Adds 1 Wool per Sheep per year.</small></span></label>
     </div>
   </div>
 
@@ -423,7 +434,11 @@ footer{text-align:center;color:#8f8066;font-size:13px;padding:16px 0 3px}
             <div class="feed-result"><span id="herdOffspringLabel">Calves / Year</span><strong id="herdOffspringTotal">3.7</strong></div>
             <div class="feed-result"><span id="herdMeatLabel">Beef / Year</span><strong id="herdMeatTotal">7.4</strong></div>
             <div class="feed-result"><span>Hides / Year</span><strong id="herdHidesTotal">3.7</strong></div>
+            <div class="feed-result"><span>Dung / Year</span><strong id="herdDungTotal">—</strong></div>
+            <div class="feed-result"><span>Fertilizer Potential</span><strong id="herdFertilizerTotal">—</strong></div>
           </div>
+          <div class="note">Dung is shown as a long-term annual average. Every 5 Dung can be processed into 1 Fertilizer.</div>
+          <div class="note">Dung intervals: Cow 60 days, Calf 120, Sheep 160, Lamb 320, Goat Pen 120, Pig Pen 90.</div>
         </div>
       </div>
     </div>
@@ -559,18 +574,18 @@ const GAME = {
     feedPerOat: MANOR_LORDS_DATA.livestock.common.feedPerOat,
     livestockTradeCost: MANOR_LORDS_DATA.trade.importTariff
   },
-  cow: MANOR_LORDS_DATA.livestock.cow,
-  sheep: MANOR_LORDS_DATA.livestock.sheep
+  cow: {...MANOR_LORDS_DATA.livestock.cow, breedChance:0.40, adultDungDays:60, youngDungDays:120},
+  sheep: {...MANOR_LORDS_DATA.livestock.sheep, breedChance:0.40, adultDungDays:160, youngDungDays:320},
+  dungPerFertilizer:5
 };
 
 // ============================================================
 // CALCULATED VALUES — normally you should NOT need to edit below
 // ============================================================
 
-const BREED_ROLLS = Math.floor(GAME.common.breedSeasonDays / GAME.common.breedRollIntervalDays);
 const BREED_CHANCE = {
-  cow: 1 - Math.pow(1 - GAME.cow.breedChancePerRoll, BREED_ROLLS),
-  sheep: 1 - Math.pow(1 - GAME.sheep.breedChancePerRoll, BREED_ROLLS)
+  cow: GAME.cow.breedChance,
+  sheep: GAME.sheep.breedChance
 };
 
 function cowMilk(m){
@@ -580,7 +595,13 @@ function cowMilk(m){
 
 function sheepWool(m){
   const s=GAME.sheep;
-  return s.woolBasePerYear + s.woolMeadowBonus*(m/100);
+  const alpsBonus=document.getElementById('alpsHighElevation')?.checked ? 1 : 0;
+  return s.woolBasePerYear + s.woolMeadowBonus*(m/100) + alpsBonus;
+}
+
+function currentBreedChance(key){
+  if(key==='cow') return GAME.cow.breedChance+(document.getElementById('livestockProvisioning')?.checked?0.15:0);
+  return GAME.sheep.breedChance+(document.getElementById('pastoralPractice')?.checked?0.30:0);
 }
 
 function oatsForFeed(feed){
@@ -592,8 +613,10 @@ const DATA = {
     name:'Cow', plural:'Cows', youngName:'Calves',
     primary:'Milk', primaryIcon:'🥛', primaryAnnual:cowMilk,
     offspringName:'Calves', offspringIcon:'🐄',
-    breedChancePerRoll:GAME.cow.breedChancePerRoll,
+    breedChancePerRoll:GAME.cow.breedChance,
     breedChance:BREED_CHANCE.cow,
+    adultDungDays:GAME.cow.adultDungDays,
+    youngDungDays:GAME.cow.youngDungDays,
 
     feed:GAME.cow.adultWinterFeed,
     oats:oatsForFeed(GAME.cow.adultWinterFeed),
@@ -621,7 +644,7 @@ const DATA = {
 
     about:[
       `Cows produce milk each month for ${GAME.cow.milkMonthsPerYear} months in Spring and Summer.`,
-      `${Math.round(GAME.cow.breedChancePerRoll*100)}% chance to breed every ${GAME.common.breedRollIntervalDays} days for ${GAME.common.breedSeasonDays} days in summer.`,
+      `${Math.round(GAME.cow.breedChance*100)}% chance for pregnancy on the first day of summer.`,
       `Calves give ${GAME.cow.calfBeef} Beef and ${GAME.cow.calfHides} Hide; adult cows give ${GAME.cow.adultBeef} Beef and ${GAME.cow.adultHides} Hides.`,
       `Calves take ${GAME.cow.maturityYears} years to mature into adult cows.`,
       `${GAME.cow.adultWinterFeed} feed (${oatsForFeed(GAME.cow.adultWinterFeed)} oats) needed per winter per adult cow.`,
@@ -636,8 +659,10 @@ const DATA = {
     name:'Sheep', plural:'Sheep', youngName:'Lambs',
     primary:'Wool', primaryIcon:'🧶', primaryAnnual:sheepWool,
     offspringName:'Lambs', offspringIcon:'🐑',
-    breedChancePerRoll:GAME.sheep.breedChancePerRoll,
+    breedChancePerRoll:GAME.sheep.breedChance,
     breedChance:BREED_CHANCE.sheep,
+    adultDungDays:GAME.sheep.adultDungDays,
+    youngDungDays:GAME.sheep.youngDungDays,
 
     feed:GAME.sheep.adultWinterFeed,
     oats:oatsForFeed(GAME.sheep.adultWinterFeed),
@@ -665,7 +690,7 @@ const DATA = {
 
     about:[
       `Sheep produce ${GAME.sheep.woolBasePerYear} base Wool per year with a chance for +${GAME.sheep.woolMeadowBonus} from Meadow.`,
-      `${Math.round(GAME.sheep.breedChancePerRoll*100)}% chance to breed every ${GAME.common.breedRollIntervalDays} days for ${GAME.common.breedSeasonDays} days in autumn.`,
+      `${Math.round(GAME.sheep.breedChance*100)}% chance for pregnancy on the first day of autumn.`,
       `Lambs give ${GAME.sheep.lambMutton} Mutton; adult sheep give ${GAME.sheep.adultMutton} Mutton and ${GAME.sheep.adultHides} Hide.`,
       `Lambs take ${GAME.sheep.maturityYears} year to mature into adult sheep.`,
       `${GAME.sheep.adultWinterFeed} feed (${oatsForFeed(GAME.sheep.adultWinterFeed)} oats) needed per winter per adult sheep.`,
@@ -683,10 +708,14 @@ function fmt(v,dec=2){ return Number(v).toFixed(dec); }
 function getResourceList(d){
   const strategy=getStrategy();
   const y=strategy==='adult'?d.adultYield:d.youngYield;
+  const youngPipelinePerAdult=strategy==='adult'?d.breedChance*d.maturityYears:0;
+  const dungPerAdult=(365/d.adultDungDays)+(youngPipelinePerAdult*365/d.youngDungDays);
   return [
     {name:d.primary,icon:d.primaryIcon,annual:m=>d.primaryAnnual(m)},
     {name:d.meat,icon:'🥩',annual:m=>d.breedChance*y.meat},
-    {name:'Hides',icon:'🟫',annual:m=>d.breedChance*y.hides}
+    {name:'Hides',icon:'🟫',annual:m=>d.breedChance*y.hides},
+    {name:'Dung',icon:'●',annual:m=>dungPerAdult},
+    {name:'Fertilizer',icon:'🌱',annual:m=>dungPerAdult/GAME.dungPerFertilizer}
   ];
 }
 function refreshResources(d){
@@ -698,8 +727,12 @@ function refreshResources(d){
 
 function render(){
   const d=DATA[animalEl.value];
+  d.breedChance=currentBreedChance(animalEl.value);
   const m=Number(meadowEl.value);
   const strategy=getStrategy();
+  document.getElementById('cowPerkRow').style.display=animalEl.value==='cow'?'flex':'none';
+  document.getElementById('sheepPerkRow').style.display=animalEl.value==='sheep'?'flex':'none';
+  document.getElementById('alpsRow').style.display=animalEl.value==='sheep'?'flex':'none';
   meadowValue.textContent=m+'%';
   document.dispatchEvent(new CustomEvent('livestock-state-updated'));
 
@@ -755,11 +788,15 @@ function render(){
       : `Current strategy: raise offspring to adulthood. Adult output assumes a mature established herd; ${d.youngName.toLowerCase()} take ${d.maturityYears} year${d.maturityYears===1?'':'s'} to mature.`;
 
   const extraFeedPerBreeder=strategy==='adult' ? d.breedChance*d.maturityYears*d.youngFeed : 0;
+  const youngPipelinePerBreeder=strategy==='adult'?d.breedChance*d.maturityYears:0;
+  const dungPerBreeder=(365/d.adultDungDays)+(youngPipelinePerBreeder*365/d.youngDungDays);
   const summaryRows=[
     [d.primaryIcon,d.primary,d.primaryAnnual(m),2],
     ['🥩',d.meat+' ('+(strategy==='adult'?'adult':'young')+' strategy)',d.breedChance*activeYield.meat,2],
     ['🟫','Hides ('+(strategy==='adult'?'adult':'young')+' strategy)',d.breedChance*activeYield.hides,2],
-    ['🌾','Avg Winter Feed burden',d.feed+extraFeedPerBreeder,2]
+    ['🌾','Avg Winter Feed burden',d.feed+extraFeedPerBreeder,2],
+    ['●','Dung',dungPerBreeder,2],
+    ['🌱','Fertilizer potential',dungPerBreeder/GAME.dungPerFertilizer,2]
   ];
   document.getElementById('summary').innerHTML=summaryRows.map(r=>
     `<div class="summary-row"><div>${r[0]} &nbsp; ${r[1]}</div><div class="summary-value">${r[2].toFixed(r[3])}</div></div>`
@@ -768,7 +805,7 @@ function render(){
 
   document.getElementById('aboutTitle').textContent='ABOUT '+d.plural.toUpperCase();
   document.getElementById('aboutList').innerHTML=d.about.map(x=>`<li>${x}</li>`).join('');
-  document.getElementById('breedSeason').innerHTML=`Offspring are born in ${d.birthSeason}.<br><br>Breeding rolls occur in ${d.breedingSeason}.<br><br>Each animal can produce a maximum of one offspring per breeding season.`;
+  document.getElementById('breedSeason').innerHTML=`Offspring are born in ${d.birthSeason}.<br><br>One pregnancy roll occurs on the first day of ${d.breedingSeason}.<br><br>Each animal can produce a maximum of one offspring per breeding season.`;
   document.getElementById('breedChance').textContent=(d.breedChance*100).toFixed(2)+'%';
   document.getElementById('offspringSmall').textContent=fmt(d.breedChance);
 
@@ -817,6 +854,12 @@ function render(){
   const youngInPipeline=strategy==='adult'
    ? Math.round(expectedYoungPerYear)*d.maturityYears
     : 0;
+  const averageYoungInPipeline=strategy==='adult'?expectedYoungPerYear*d.maturityYears:0;
+  const adultDung=herdSize*(365/d.adultDungDays);
+  const youngDung=averageYoungInPipeline*(365/d.youngDungDays);
+  const totalDung=adultDung+youngDung;
+  document.getElementById('herdDungTotal').textContent=totalDung.toFixed(1);
+  document.getElementById('herdFertilizerTotal').textContent=(totalDung/GAME.dungPerFertilizer).toFixed(1);
   const extraRaisingFeed=youngInPipeline*d.youngFeed;
 
   const totalFeed=baseFeed+extraRaisingFeed;
@@ -872,6 +915,12 @@ herdSizeEl.addEventListener('blur',()=>{
 document.querySelectorAll('input[name="strategy"]').forEach(el=>{
   el.addEventListener('change',()=>{refreshResources(DATA[animalEl.value]);render();});
 });
+['livestockProvisioning','pastoralPractice','alpsHighElevation'].forEach(id=>{
+  document.getElementById(id).addEventListener('change',()=>{
+    render();
+    refreshResources(DATA[animalEl.value]);
+  });
+});
 
 document.getElementById('gameVersion').textContent=GAME.version;
 refreshResources(DATA.cow);
@@ -904,12 +953,12 @@ document.querySelectorAll('[data-game-version]').forEach(function(el){
       <h3 style="color:#f0d189;margin:0 0 10px">Breeding Information</h3>
       <div class="breed-grid">
         <div class="breed-item">
-          <div id="breedRollModal">5% chance to breed<br>every 10 days<br>for 90 days</div>
+          <div id="breedRollModal">40% pregnancy chance<br>on the first day<br>of the breeding season</div>
         </div>
         <div class="breed-item">
           <div>Chance of at least<br>one offspring:</div>
-          <div id="breedChanceModal" class="breed-big">36.98%</div>
-          <div>Average offspring/year:<br><span id="offspringSmallModal">0.37</span></div>
+          <div id="breedChanceModal" class="breed-big">40.00%</div>
+          <div>Average offspring/year:<br><span id="offspringSmallModal">0.40</span></div>
         </div>
         <div class="breed-item" id="breedSeasonModal">Birth and breeding seasons follow the selected animal's shared game data.<br><br>Each animal can produce a maximum of one offspring per breeding season.</div>
       </div>
@@ -953,7 +1002,7 @@ document.querySelectorAll('[data-game-version]').forEach(function(el){
     if(os) document.getElementById('offspringSmallModal').textContent=os.textContent;
     if(bs) document.getElementById('breedSeasonModal').innerHTML=bs.innerHTML;
     const br=document.getElementById('breedRollModal');
-    if(br && d) br.innerHTML=Math.round(d.breedChancePerRoll*100)+'% chance to breed<br>every '+GAME.common.breedRollIntervalDays+' days<br>for '+GAME.common.breedSeasonDays+' days';
+    if(br && d) br.innerHTML=Math.round(d.breedChance*100)+'% pregnancy chance<br>on the first day<br>of '+d.breedingSeason;
   }
 
   btn.addEventListener('click',()=>{refreshAbout();modal.style.display='flex';});
@@ -1009,6 +1058,7 @@ document.querySelectorAll('[data-game-version]').forEach(function(el){
   document.getElementById('animal').addEventListener('change',updateThreeGoals);
   document.getElementById('meadow').addEventListener('input',updateThreeGoals);
   document.querySelectorAll('input[name="strategy"]').forEach(el=>el.addEventListener('change',updateThreeGoals));
+  document.addEventListener('livestock-state-updated',updateThreeGoals);
   setTimeout(updateThreeGoals,0);
 })();
 </script>

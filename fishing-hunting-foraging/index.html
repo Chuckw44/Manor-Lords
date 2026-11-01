@@ -34,6 +34,10 @@ body{min-height:100vh;padding:18px;background:radial-gradient(circle at 70% 0%,r
 .controls,.results,.notes{padding:17px}
 .section-title{font-size:19px;border-bottom:1px solid var(--line);padding-bottom:9px;margin-bottom:14px}
 .control-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.perk-row{grid-column:1/-1;border:1px solid rgba(115,92,49,.55);border-radius:5px;padding:11px 12px;background:rgba(255,255,255,.015)}
+.perk-row label{display:flex;align-items:center;gap:9px;margin:0;color:var(--text);font-size:16px;cursor:pointer}
+.perk-row input{width:18px;height:18px;margin:0;accent-color:#78963f}
+.perk-row .note{margin:5px 0 0 27px}
 label{display:block;font-size:14px;color:var(--muted);margin-bottom:5px}
 select,input[type=number],input[type=range]{
   width:100%;background:#101719;color:var(--text);border:1px solid #6b5734;border-radius:5px;padding:11px 12px;font:18px Georgia
@@ -153,6 +157,13 @@ footer{text-align:center;color:#8f8066;font-size:13px;padding:20px 0 5px}
               <option value="regular">Regular</option>
             </select>
           </div>
+          <div class="perk-row">
+            <label for="fishHusbandry">
+              <input id="fishHusbandry" type="checkbox">
+              <span>Fish Husbandry</span>
+            </label>
+            <div class="note">Extends spawning from March through November and changes monthly growth to 20%.</div>
+          </div>
         </div>
         <div class="note">
           Each fishing spot can catch about <span id="fishSpotRateNote">15.0</span> fish per month while actively worked. Larger harvest targets require workers to reach more—and usually farther—spots.
@@ -164,7 +175,7 @@ footer{text-align:center;color:#8f8066;font-size:13px;padding:20px 0 5px}
           </div>
           <div id="fishLayout" aria-label="Suggested fishing hut placement diagram"></div>
         </div>
-        <div class="note">
+        <div class="note" id="fishSpawnNote">
           Fish reproduce only on March 1, April 1 and May 1. Each spawn adds 40% of the current stock,
           rounded up, up to the node's cap. The ideal reserve is cap ÷ 1.4 (about 71.4%), which
           maximizes each spring spawn.
@@ -184,7 +195,7 @@ footer{text-align:center;color:#8f8066;font-size:13px;padding:20px 0 5px}
           <div class="metric"><div class="label">Fishing Spots</div><div id="fishSpotsMetric" class="value">—</div><div class="unit">needed / available</div></div>
         </div>
 
-        <div class="strategy">
+        <div class="strategy" id="fishStrategy">
           <h3>After the May 1 Spawn</h3>
           <div class="season" style="max-width:360px;margin:0 auto 10px">
             <strong>1 Family</strong>
@@ -198,7 +209,7 @@ footer{text-align:center;color:#8f8066;font-size:13px;padding:20px 0 5px}
         </div>
 
         <table>
-          <thead><tr><th>Spawn</th><th>Start</th><th>After +40%</th><th>Target Catch</th></tr></thead>
+          <thead><tr><th>Spawn</th><th>Start</th><th id="fishGrowthHeading">After +40%</th><th>Target Catch</th></tr></thead>
           <tbody id="fishTable"></tbody>
         </table>
 
@@ -377,7 +388,15 @@ const $=id=>document.getElementById(id);
 // ============================================================
 
 const GAME = {
-  fishing: MANOR_LORDS_DATA.fishing,
+  fishing: {
+    ...MANOR_LORDS_DATA.fishing,
+    pondSpots: 15,
+    riverSpots: 15,
+    fishHusbandry: {
+      spawnGrowthRate: 0.20,
+      spawnDates: ["March 1","April 1","May 1","June 1","July 1","August 1","September 1","October 1","November 1"]
+    }
+  },
   hunting: MANOR_LORDS_DATA.hunting,
   foraging: MANOR_LORDS_DATA.foraging,
   origins: {
@@ -420,39 +439,42 @@ function renderOriginRecommendation(){
 }
 
 // ---------- Fishing ----------
-function bestFishReserve(cap, monthlyCatchCapacity){
-  const growth=1+GAME.fishing.spawnGrowthRate;
+function bestFishReserve(cap, monthlyCatchCapacity, husbandry){
+  const settings=husbandry ? GAME.fishing.fishHusbandry : GAME.fishing;
+  const spawnRate=settings.spawnGrowthRate;
+  const spawnDates=settings.spawnDates;
+  const growth=1+spawnRate;
 
-  // Biological one-spawn optimum: cap / 1.4.
-  const biologicalReserve=Math.floor(cap/growth);
-  const biologicalAfter=Math.min(
+  // The ideal reserve refills to the entered capacity at the next spawn.
+  const idealReserve=Math.floor(cap/growth);
+  const idealAfter=Math.min(
     cap,
-    biologicalReserve + Math.ceil(biologicalReserve*GAME.fishing.spawnGrowthRate)
+    idealReserve + Math.ceil(idealReserve*spawnRate)
   );
-  const biologicalSpawn=Math.max(0,biologicalAfter-biologicalReserve);
+  const idealSpawn=Math.max(0,idealAfter-idealReserve);
 
   let reserve;
   let constrained=false;
 
-  if(monthlyCatchCapacity>=biologicalSpawn){
-    reserve=biologicalReserve;
+  if(monthlyCatchCapacity>=idealSpawn){
+    reserve=idealReserve;
   }else{
-    // Consecutive spring-spawn catch-limit formula:
-    // (((cap / 1.4) + monthlyCatchCapacity) / 1.4 + monthlyCatchCapacity) / 1.4
-    reserve=Math.round(
-      (((cap/growth)+monthlyCatchCapacity)/growth+monthlyCatchCapacity)/growth
-    );
+    // Work backwards through consecutive monthly spawns when the available
+    // fishing spots cannot return the node to its ideal reserve each month.
+    reserve=cap/growth;
+    for(let i=1;i<spawnDates.length;i++) reserve=(reserve+monthlyCatchCapacity)/growth;
+    reserve=Math.round(reserve);
     reserve=Math.max(1,Math.min(cap-1,reserve));
     constrained=true;
   }
 
   let stock=reserve, total=0, rows=[];
 
-  for(let i=0;i<3;i++){
+  for(let i=0;i<spawnDates.length;i++){
     const start=stock;
     const after=Math.min(
       cap,
-      stock + Math.ceil(stock*GAME.fishing.spawnGrowthRate)
+      stock + Math.ceil(stock*spawnRate)
     );
 
     // No month can exceed the node's actual monthly catch capacity.
@@ -466,20 +488,20 @@ function bestFishReserve(cap, monthlyCatchCapacity){
     rows.push({start,after,caught});
   }
 
-  // Anything still above reserve after May can be harvested gradually later
-  // in the year, so include it in expected annual yield without pretending
-  // it was all caught during May.
-  const postMayCleanup=Math.max(0,stock-reserve);
-  total+=postMayCleanup;
+  // Anything still above reserve after the final spawn can be harvested later.
+  const finalCleanup=Math.max(0,stock-reserve);
+  total+=finalCleanup;
 
   return {
     reserve:reserve,
     yield:total,
     rows:rows,
     constrained:constrained,
-    biologicalReserve:biologicalReserve,
-    biologicalSpawn:biologicalSpawn,
-    postMayCleanup:postMayCleanup
+    idealReserve:idealReserve,
+    idealSpawn:idealSpawn,
+    finalCleanup:finalCleanup,
+    spawnRate:spawnRate,
+    spawnDates:spawnDates
   };
 }
 
@@ -500,7 +522,7 @@ function renderFishingLayout(type,quality,huts,families){
     const cx=300, cy=174;
     const spotRadius=119;
     const hutRadius=157;
-    const spotAngles=Array.from({length:11},(_,i)=>-90+(360/11)*i);
+    const spotAngles=Array.from({length:15},(_,i)=>-90+(360/15)*i);
     const spots=spotAngles.map(a=>{
       const r=a*Math.PI/180, x=cx+spotRadius*Math.cos(r), y=cy+spotRadius*Math.sin(r);
       return `<circle class="layout-spot" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="7"/><circle class="layout-spot-core" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.5"/>`;
@@ -512,7 +534,7 @@ function renderFishingLayout(type,quality,huts,families){
       const r=a*Math.PI/180, x=cx+hutRadius*Math.cos(r), y=cy+hutRadius*Math.sin(r);
       return hut(x.toFixed(1),y.toFixed(1),.95);
     }).join('');
-    target.innerHTML=`<svg viewBox="0 0 600 430" role="img" aria-label="Round pond with eleven fishing spots and suggested hut locations">
+    target.innerHTML=`<svg viewBox="0 0 600 430" role="img" aria-label="Round pond with fifteen fishing spots and suggested hut locations">
       <circle class="layout-bank" cx="${cx}" cy="${cy}" r="128"/>
       <circle class="layout-water" cx="${cx}" cy="${cy}" r="119"/>
       ${spots}${hutsSvg}
@@ -525,7 +547,7 @@ function renderFishingLayout(type,quality,huts,families){
       <text class="layout-caption" x="300" y="416" text-anchor="middle">${isRich?'Spread one hut per recommended family around a rich pond.':'On a regular pond, up to two families can share each well-placed hut.'}</text>
     </svg>`;
   }else{
-    const xs=[92,176,260,344,428,512];
+    const xs=Array.from({length:15},(_,i)=>58+(484/14)*i);
     const spots=xs.map(x=>`<circle class="layout-spot" cx="${x}" cy="217" r="7"/><circle class="layout-spot-core" cx="${x}" cy="217" r="2.5"/>`).join('');
     // Keep suggested huts evenly distributed along the bank for either
     // quality. This is a placement illustration, not an ownership mapping
@@ -535,7 +557,7 @@ function renderFishingLayout(type,quality,huts,families){
       ? [300]
       : Array.from({length:hutCount},(_,i)=>left+(right-left)*(i/(hutCount-1)));
     const hutsSvg=hutXs.map(x=>hut(x,84,.95)).join('');
-    target.innerHTML=`<svg viewBox="0 0 600 410" role="img" aria-label="River or lake edge with six fishing spots and suggested hut locations">
+    target.innerHTML=`<svg viewBox="0 0 600 410" role="img" aria-label="River or lake edge with fifteen fishing spots and suggested hut locations">
       <path class="layout-bank" d="M30 135 C135 121 210 145 302 132 C388 120 466 145 570 130"/>
       <path class="layout-water" d="M24 143 C130 126 210 153 301 140 C392 127 472 153 576 137 L576 259 C468 273 392 247 301 260 C206 273 130 246 24 263 Z"/>
       ${spots}${hutsSvg}
@@ -558,6 +580,7 @@ function renderFishing(){
   const cap=Math.min(500,Math.max(2,Math.floor(Number($('fishCap').value)||2)));
   const type=$('fishType').value;
   const quality=$('fishQuality').value;
+  const husbandry=$('fishHusbandry').checked;
   const fishSpecies=(type==='pond' || quality==='regular') ? 'Carp' : 'Eel';
   $('fishSpeciesDisplay').textContent=fishSpecies;
   const spots=type==='pond'?GAME.fishing.pondSpots:GAME.fishing.riverSpots;
@@ -566,7 +589,7 @@ function renderFishing(){
   const fishingLaborMultiplier = origin==='strasburg' ? GAME.origins.strasburg.fishingLaborSpeedMultiplier : 1;
   const catchPerSpotPerMonth = GAME.fishing.catchPerSpotPerMonth * fishingLaborMultiplier;
   const fullNodeMonthlyCapacity = spots * catchPerSpotPerMonth;
-  const best=bestFishReserve(cap,fullNodeMonthlyCapacity);
+  const best=bestFishReserve(cap,fullNodeMonthlyCapacity,husbandry);
 
   $('fishReserve').textContent=best.reserve;
   $('fishAnnual').textContent=best.yield;
@@ -574,13 +597,14 @@ function renderFishing(){
 
   $('fishMonthlyCapacity').textContent=Math.round(fullNodeMonthlyCapacity);
 
-  const maxSpringHarvestNeeded=Math.max(...best.rows.slice(0,2).map(r=>r.caught));
+  const deadlineRows=husbandry ? best.rows.slice(0,-1) : best.rows.slice(0,2);
+  const maxMonthlyHarvestNeeded=Math.max(...deadlineRows.map(r=>r.caught));
 
   // First determine the number of fishing spots that must be actively worked.
-  // This is driven by the biological spring harvest target, not by total spots.
+  // This is driven by the harvest required between consecutive spawns.
   const spotsNeeded=Math.max(
     1,
-    Math.min(spots,Math.ceil(maxSpringHarvestNeeded / catchPerSpotPerMonth))
+    Math.min(spots,Math.ceil(maxMonthlyHarvestNeeded / catchPerSpotPerMonth))
   );
 
   // Practical staffing rule: each family has three members, but the planner
@@ -588,36 +612,54 @@ function renderFishing(){
   // deliberate headroom for normal interruptions such as household needs,
   // illness, burgage work and travel. This avoids adding a whole extra family
   // when the recommended families already contain spare worker capacity.
-  const springFamilies=Math.max(1,Math.min(5,Math.ceil(spotsNeeded/2)));
+  const recommendedFamilies=Math.max(1,Math.ceil(spotsNeeded/2));
 
 
   // Placement recommendation: rich nodes use one family per hut, spread
   // around the fishing area. Regular nodes can place up to two families in
   // each well-positioned hut.
-  const huts=quality==='rich' ? springFamilies : Math.max(1,Math.ceil(springFamilies/2));
+  const huts=quality==='rich' ? recommendedFamilies : Math.max(1,Math.ceil(recommendedFamilies/2));
   $('fishBuildings').textContent=huts;
-  $('fishFamiliesCard').textContent=springFamilies;
+  $('fishFamiliesCard').textContent=recommendedFamilies;
   $('fishSpotsMetric').textContent=`${spotsNeeded} / ${spots}`;
-  renderFishingLayout(type,quality,huts,springFamilies);
+  renderFishingLayout(type,quality,huts,recommendedFamilies);
 
-  const requiredMonthlyExtraction=maxSpringHarvestNeeded;
+  const requiredMonthlyExtraction=maxMonthlyHarvestNeeded;
+
+  $('fishSpawnNote').innerHTML=husbandry
+    ? `With <b>Fish Husbandry</b>, Fish reproduce on the first day of every month from March through November. Each spawn adds 20% of the current stock, rounded up, up to the entered capacity. The ideal reserve is cap ÷ 1.2 (about 83.3%).`
+    : `Fish reproduce only on March 1, April 1 and May 1. Each spawn adds 40% of the current stock, rounded up, up to the node's cap. The ideal reserve is cap ÷ 1.4 (about 71.4%), which maximizes each spring spawn.`;
+
+  $('fishStrategy').innerHTML=husbandry
+    ? `<h3>March–November Spawns</h3>
+       <div class="season-grid" style="grid-template-columns:repeat(3,1fr)">
+         <div class="season">Spring<strong>${recommendedFamilies}</strong>${recommendedFamilies===1?'family':'families'}</div>
+         <div class="season">Summer<strong>${recommendedFamilies}</strong>${recommendedFamilies===1?'family':'families'}</div>
+         <div class="season">Autumn<strong>${recommendedFamilies}</strong>${recommendedFamilies===1?'family':'families'}</div>
+       </div>
+       <div class="callout"><b>Seasonal assignment:</b> Keep the recommended workforce assigned through the November 1 spawn. After that, there is no further spawn deadline. You can unassign them or leave 1 family to harvest any remaining surplus gradually.</div>`
+    : `<h3>After the May 1 Spawn</h3>
+       <div class="season" style="max-width:360px;margin:0 auto 10px"><strong>1 Family</strong>No further spawn deadline. Harvest the remaining surplus gradually to reduce Fish spoilage.</div>
+       <div class="callout"><b>Seasonal assignment option:</b> After the May 1 spawn, full staffing is no longer necessary. You can unassign the spring workforce and use <b>1–2 families in a later season</b> to finish the remaining harvest gradually. This helps avoid catching a large surplus at once that will spoil before your peasants can consume it.</div>`;
+
+  $('fishGrowthHeading').textContent=`After +${Math.round(best.spawnRate*100)}%`;
 
   $('fishMethodology').innerHTML=
-    `<b>${springFamilies} famil${springFamilies===1?'y':'ies'} recommended.</b> `+
+    `<b>${recommendedFamilies} famil${recommendedFamilies===1?'y':'ies'} recommended.</b> `+
     `This node needs about <b>${spotsNeeded} of ${spots} fishing spots</b> actively worked to clear up to `+
-    `<b>${requiredMonthlyExtraction} fish/month</b> between spring spawns. `+
-    `The recommendation counts about two active workers per family, leaving roughly one worker per family as some flexibility for normal interruptions such as fuel, water, tranport, and travel. `+
+    `<b>${requiredMonthlyExtraction} fish/month</b> between ${husbandry?'March–November':'spring'} spawns. `+
+    `The recommendation counts about two active workers per family, leaving roughly one worker per family as some flexibility for normal interruptions such as fuel, water, transport, and travel. `+
     (quality==='rich'
       ? `<b>Hut placement:</b> use about one Fishing Hut per assigned family and spread them around the fishing area to reduce travel. `
       : `<b>Hut placement:</b> on a regular node, up to two assigned families can share a well-placed Fishing Hut. `)+
     (best.constrained
-      ? `Even full-node catch capacity cannot completely clear the spring surplus before the next spawn, so the planner uses the consecutive-spawn reserve of <b>${best.reserve}</b>. `
-      : `Full-node catch capacity can return the stock to the reserve of <b>${best.reserve}</b> between spring spawns. `)+
+      ? `Even full-node catch capacity cannot completely clear the surplus before the next spawn, so the planner uses the consecutive-spawn reserve of <b>${best.reserve}</b>. `
+      : `Full-node catch capacity can return the stock to the reserve of <b>${best.reserve}</b> between ${husbandry?'monthly':'spring'} spawns. `)+
     (origin==='strasburg'
       ? `<b>Strasburg Masons:</b> Fisherman's Hut labor speed is reduced by 20%, so effective spot catch capacity is reduced accordingly. `
       : ``);
 
-  const names=GAME.fishing.spawnDates;
+  const names=best.spawnDates;
   $('fishTable').innerHTML=best.rows.map((r,i)=>
     `<tr><td>${names[i]}</td><td>${r.start}</td><td>${r.after}</td><td>${r.caught}</td></tr>`
   ).join('');
@@ -813,7 +855,7 @@ function clampNumberField(id,min,max,renderFn){
   el.addEventListener('blur',commit);
 }
 
-['fishType','fishCap','fishQuality'].forEach(id=>$(id).addEventListener('input',renderFishing));
+['fishType','fishCap','fishQuality','fishHusbandry'].forEach(id=>$(id).addEventListener('input',renderFishing));
 ['rabbitCap','huntWoodland'].forEach(id=>$(id).addEventListener('input',renderHunting));
 ['forageType','forageCap','forageWoodland'].forEach(id=>$(id).addEventListener('input',renderForaging));
 clampNumberField('fishCap',2,500,renderFishing);
