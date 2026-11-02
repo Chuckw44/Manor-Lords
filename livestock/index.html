@@ -275,6 +275,7 @@ footer{text-align:center;color:#8f8066;font-size:13px;padding:16px 0 3px}
 .perk-option{display:flex;align-items:flex-start;gap:9px;margin-top:9px;color:var(--text);cursor:pointer}
 .perk-option input{width:18px;height:18px;margin:1px 0 0;accent-color:#78963f}
 .perk-option span{line-height:1.35}
+.perk-option.locked{opacity:.55;cursor:not-allowed}
 @media(max-width:600px){
   .feed-feature .feed-input-row{
     flex-wrap:wrap;
@@ -366,9 +367,12 @@ footer{text-align:center;color:#8f8066;font-size:13px;padding:16px 0 3px}
     </div>
 
     <div class="perk-controls">
-      <div class="label">LIVESTOCK PERKS</div>
-      <label class="perk-option" id="cowPerkRow"><input id="livestockProvisioning" type="checkbox"><span><b>Livestock Provisioning</b><br><small>Raises Cow reproduction success from 40% to 55%.</small></span></label>
-      <label class="perk-option" id="sheepPerkRow" style="display:none"><input id="pastoralPractice" type="checkbox"><span><b>Pastoral Practice</b><br><small>Raises Sheep reproduction success from 40% to 70%.</small></span></label>
+      <div class="label">DEVELOPMENT FOUNDATIONS</div>
+      <label class="perk-option" id="cowPerkRow"><input id="livestockProvisioning" type="checkbox"><span><b>Livestock Provisioning</b><br><small id="livestockProvisioningNote">Raises Cow reproduction success from 40% to 55%. Unlocks the Butcher's Gantry.</small></span></label>
+      <label class="perk-option" id="sheepPerkRow"><input id="pastoralPractice" type="checkbox"><span><b>Pastoral Practice</b><br><small id="pastoralPracticeNote">Unlocks the Stone-Lined Pit.</small></span></label>
+      <div class="label" style="margin-top:14px">BUILDING UPGRADES</div>
+      <label class="perk-option locked" id="gantryRow"><input id="butcherGantry" type="checkbox" disabled><span><b>Butcher's Gantry</b><br><small>Requires Livestock Provisioning. Adds 20% average Butcher output.</small></span></label>
+      <label class="perk-option locked" id="stonePitRow"><input id="stoneLinedPit" type="checkbox" disabled><span><b>Stone-Lined Pit</b><br><small>Requires Pastoral Practice. Adds 20% average Fertilizer output.</small></span></label>
       <label class="perk-option" id="alpsRow" style="display:none"><input id="alpsHighElevation" type="checkbox"><span><b>Apply high-elevation Alps bonus</b><br><small>Requires Born of the Alps and Sheep pastured at high elevation. Adds 1 Wool per Sheep per year.</small></span></label>
     </div>
   </div>
@@ -439,6 +443,7 @@ footer{text-align:center;color:#8f8066;font-size:13px;padding:16px 0 3px}
           </div>
           <div class="note">Dung is shown as a long-term annual average. Every 5 Dung can be processed into 1 Fertilizer.</div>
           <div class="note">Dung intervals: Cow 60 days, Calf 120, Sheep 160, Lamb 320, Goat Pen 120, Pig Pen 90.</div>
+          <div id="upgradeAverageNote" class="note" style="display:none">Upgrade bonuses are shown as long-term averages. In-game, every fifth craft produces double output.</div>
         </div>
       </div>
     </div>
@@ -576,7 +581,8 @@ const GAME = {
   },
   cow: {...MANOR_LORDS_DATA.livestock.cow, breedChance:0.40, adultDungDays:60, youngDungDays:120},
   sheep: {...MANOR_LORDS_DATA.livestock.sheep, breedChance:0.40, adultDungDays:160, youngDungDays:320},
-  dungPerFertilizer:5
+  dungPerFertilizer:5,
+  upgradeEfficiencyMultiplier:1.20
 };
 
 // ============================================================
@@ -602,6 +608,14 @@ function sheepWool(m){
 function currentBreedChance(key){
   if(key==='cow') return GAME.cow.breedChance+(document.getElementById('livestockProvisioning')?.checked?0.15:0);
   return GAME.sheep.breedChance+(document.getElementById('pastoralPractice')?.checked?0.30:0);
+}
+
+function gantryMultiplier(){
+  return document.getElementById('butcherGantry')?.checked ? GAME.upgradeEfficiencyMultiplier : 1;
+}
+
+function stonePitMultiplier(){
+  return document.getElementById('stoneLinedPit')?.checked ? GAME.upgradeEfficiencyMultiplier : 1;
 }
 
 function oatsForFeed(feed){
@@ -712,10 +726,10 @@ function getResourceList(d){
   const dungPerAdult=(365/d.adultDungDays)+(youngPipelinePerAdult*365/d.youngDungDays);
   return [
     {name:d.primary,icon:d.primaryIcon,annual:m=>d.primaryAnnual(m)},
-    {name:d.meat,icon:'🥩',annual:m=>d.breedChance*y.meat},
-    {name:'Hides',icon:'🟫',annual:m=>d.breedChance*y.hides},
-    {name:'Dung',icon:'●',annual:m=>dungPerAdult},
-    {name:'Fertilizer',icon:'🌱',annual:m=>dungPerAdult/GAME.dungPerFertilizer}
+    {name:d.meat,icon:'🥩',annual:m=>d.breedChance*y.meat*gantryMultiplier()},
+    {name:'Hides',icon:'🟫',annual:m=>d.breedChance*y.hides*gantryMultiplier()},
+    {name:'Dung',icon:'💩',annual:m=>dungPerAdult},
+    {name:'Fertilizer',icon:'🌱',annual:m=>(dungPerAdult/GAME.dungPerFertilizer)*stonePitMultiplier()}
   ];
 }
 function refreshResources(d){
@@ -730,9 +744,25 @@ function render(){
   d.breedChance=currentBreedChance(animalEl.value);
   const m=Number(meadowEl.value);
   const strategy=getStrategy();
-  document.getElementById('cowPerkRow').style.display=animalEl.value==='cow'?'flex':'none';
-  document.getElementById('sheepPerkRow').style.display=animalEl.value==='sheep'?'flex':'none';
+  const provisioning=document.getElementById('livestockProvisioning').checked;
+  const pastoral=document.getElementById('pastoralPractice').checked;
+  const gantry=document.getElementById('butcherGantry');
+  const stonePit=document.getElementById('stoneLinedPit');
+  gantry.disabled=!provisioning;
+  stonePit.disabled=!pastoral;
+  if(!provisioning) gantry.checked=false;
+  if(!pastoral) stonePit.checked=false;
+  document.getElementById('gantryRow').classList.toggle('locked',gantry.disabled);
+  document.getElementById('stonePitRow').classList.toggle('locked',stonePit.disabled);
+  document.getElementById('livestockProvisioningNote').textContent=animalEl.value==='cow'
+    ? `Raises Cow reproduction success from 40% to 55%. Unlocks the Butcher's Gantry.`
+    : `Unlocks the Butcher's Gantry.`;
+  document.getElementById('pastoralPracticeNote').textContent=animalEl.value==='sheep'
+    ? `Raises Sheep reproduction success from 40% to 70%. Unlocks the Stone-Lined Pit.`
+    : `Unlocks the Stone-Lined Pit.`;
   document.getElementById('alpsRow').style.display=animalEl.value==='sheep'?'flex':'none';
+  const gantryMult=gantryMultiplier();
+  const pitMult=stonePitMultiplier();
   meadowValue.textContent=m+'%';
   document.dispatchEvent(new CustomEvent('livestock-state-updated'));
 
@@ -792,16 +822,17 @@ function render(){
   const dungPerBreeder=(365/d.adultDungDays)+(youngPipelinePerBreeder*365/d.youngDungDays);
   const summaryRows=[
     [d.primaryIcon,d.primary,d.primaryAnnual(m),2],
-    ['🥩',d.meat+' ('+(strategy==='adult'?'adult':'young')+' strategy)',d.breedChance*activeYield.meat,2],
-    ['🟫','Hides ('+(strategy==='adult'?'adult':'young')+' strategy)',d.breedChance*activeYield.hides,2],
+    ['🥩',d.meat+' ('+(strategy==='adult'?'adult':'young')+' strategy)',d.breedChance*activeYield.meat*gantryMult,2],
+    ['🟫','Hides ('+(strategy==='adult'?'adult':'young')+' strategy)',d.breedChance*activeYield.hides*gantryMult,2],
     ['🌾','Avg Winter Feed burden',d.feed+extraFeedPerBreeder,2],
-    ['●','Dung',dungPerBreeder,2],
-    ['🌱','Fertilizer potential',dungPerBreeder/GAME.dungPerFertilizer,2]
+    ['💩','Dung',dungPerBreeder,2],
+    ['🌱','Fertilizer potential',(dungPerBreeder/GAME.dungPerFertilizer)*pitMult,2]
   ];
   document.getElementById('summary').innerHTML=summaryRows.map(r=>
     `<div class="summary-row"><div>${r[0]} &nbsp; ${r[1]}</div><div class="summary-value">${r[2].toFixed(r[3])}</div></div>`
   ).join('');
-  document.getElementById('summaryNote').textContent=`Values are averages per ${d.name.toLowerCase()} per year at ${m}% meadow.`;
+  document.getElementById('summaryNote').textContent=`Values are averages per ${d.name.toLowerCase()} per year at ${m}% meadow.`+
+    ((gantry.checked||stonePit.checked)?` Selected upgrade bonuses are long-term averages; every fifth craft produces double output.`:'');
 
   document.getElementById('aboutTitle').textContent='ABOUT '+d.plural.toUpperCase();
   document.getElementById('aboutList').innerHTML=d.about.map(x=>`<li>${x}</li>`).join('');
@@ -813,12 +844,12 @@ function render(){
   document.getElementById('econFeed').textContent=`${d.feed} Feed`;
   document.getElementById('econOats').textContent=`${d.oats} Oats`;
 
-  const extraMeat=d.adultYield.meat-d.youngYield.meat;
-  const extraHides=d.adultYield.hides-d.youngYield.hides;
+  const extraMeat=(d.adultYield.meat-d.youngYield.meat)*gantryMult;
+  const extraHides=(d.adultYield.hides-d.youngYield.hides)*gantryMult;
   document.getElementById('strategyCompare').innerHTML=
     `<b>Raise to adult vs butcher young:</b><br>`+
-    `Gain per offspring: <span class="green">+${extraMeat} ${d.meat}</span>`+
-    `${extraHides>0?` and <span class="green">+${extraHides} Hide${extraHides===1?'':'s'}</span>`:''}.<br>`+
+    `Gain per offspring: <span class="green">+${Number(extraMeat.toFixed(2))} ${d.meat}</span>`+
+    `${extraHides>0?` and <span class="green">+${Number(extraHides.toFixed(2))} Hide${extraHides===1?'':'s'}</span>`:''}.<br>`+
     `Cost per offspring: <b>${d.youngFeed*d.maturityYears} extra feed</b> (${(d.youngFeed*d.maturityYears/2).toFixed(1)} oats) across <b>${d.maturityYears} year${d.maturityYears===1?'':'s'}</b> of maturation.`;
 
   const herdSize=Math.max(1,Math.floor(Number(herdSizeEl.value)||1));
@@ -831,16 +862,16 @@ function render(){
   // This preserves the exact per-animal output bundle instead of
   // independently rounding meat and hides.
   const herdSlaughterCount=Math.round(herdOffspringTotal);
-  const herdMeatTotal=herdSlaughterCount*activeYield.meat;
-  const herdHidesTotal=herdSlaughterCount*activeYield.hides;
+  const herdMeatTotal=herdSlaughterCount*activeYield.meat*gantryMult;
+  const herdHidesTotal=herdSlaughterCount*activeYield.hides*gantryMult;
 
   document.getElementById('herdPrimaryLabel').textContent=d.primary+' / Year';
   document.getElementById('herdPrimaryTotal').textContent=Math.round(herdPrimaryTotal);
   document.getElementById('herdOffspringLabel').textContent='Avg. '+d.offspringName+' / Year';
   document.getElementById('herdOffspringTotal').textContent=herdSlaughterCount;
   document.getElementById('herdMeatLabel').textContent=d.meat+' / Year';
-  document.getElementById('herdMeatTotal').textContent=herdMeatTotal;
-  document.getElementById('herdHidesTotal').textContent=herdHidesTotal;
+  document.getElementById('herdMeatTotal').textContent=gantry.checked?herdMeatTotal.toFixed(1):herdMeatTotal;
+  document.getElementById('herdHidesTotal').textContent=gantry.checked?herdHidesTotal.toFixed(1):herdHidesTotal;
 
   // Adult winter feed.
   const baseFeed=herdSize*d.feed;
@@ -859,7 +890,8 @@ function render(){
   const youngDung=averageYoungInPipeline*(365/d.youngDungDays);
   const totalDung=adultDung+youngDung;
   document.getElementById('herdDungTotal').textContent=totalDung.toFixed(1);
-  document.getElementById('herdFertilizerTotal').textContent=(totalDung/GAME.dungPerFertilizer).toFixed(1);
+  document.getElementById('herdFertilizerTotal').textContent=((totalDung/GAME.dungPerFertilizer)*pitMult).toFixed(1);
+  document.getElementById('upgradeAverageNote').style.display=(gantry.checked||stonePit.checked)?'block':'none';
   const extraRaisingFeed=youngInPipeline*d.youngFeed;
 
   const totalFeed=baseFeed+extraRaisingFeed;
@@ -915,7 +947,7 @@ herdSizeEl.addEventListener('blur',()=>{
 document.querySelectorAll('input[name="strategy"]').forEach(el=>{
   el.addEventListener('change',()=>{refreshResources(DATA[animalEl.value]);render();});
 });
-['livestockProvisioning','pastoralPractice','alpsHighElevation'].forEach(id=>{
+['livestockProvisioning','pastoralPractice','butcherGantry','stoneLinedPit','alpsHighElevation'].forEach(id=>{
   document.getElementById(id).addEventListener('change',()=>{
     render();
     refreshResources(DATA[animalEl.value]);
@@ -1031,8 +1063,8 @@ document.querySelectorAll('[data-game-version]').forEach(function(el){
 
     const products=[
       {name:d.primary, icon:d.primaryIcon, rate:d.primaryAnnual(m)},
-      {name:d.meat, icon:'🥩', rate:d.breedChance*activeYield.meat},
-      {name:'Hides', icon:'🟫', rate:d.breedChance*activeYield.hides}
+      {name:d.meat, icon:'🥩', rate:d.breedChance*activeYield.meat*gantryMultiplier()},
+      {name:'Hides', icon:'🟫', rate:d.breedChance*activeYield.hides*gantryMultiplier()}
     ];
 
     products.forEach((p,i)=>{
