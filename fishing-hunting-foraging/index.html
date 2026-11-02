@@ -149,6 +149,7 @@ footer{text-align:center;color:#8f8066;font-size:13px;padding:20px 0 5px}
           <div>
             <label for="fishCap">Node capacity</label>
             <input id="fishCap" type="number" min="2" max="500" step="1" value="354">
+            <div class="note">Enter the node's current capacity as shown in-game. The planner does not add Fish Husbandry's 15% capacity bonus automatically.</div>
           </div>
           <div>
             <label for="fishQuality">Node quality</label>
@@ -191,7 +192,7 @@ footer{text-align:center;color:#8f8066;font-size:13px;padding:20px 0 5px}
         </div>
         <div class="metrics" style="margin-top:10px">
           <div class="metric"><div class="label">Expected Annual Yield</div><div id="fishAnnual" class="value">—</div><div class="unit">fish / year</div></div>
-          <div class="metric"><div class="label">Catch Capacity</div><div id="fishMonthlyCapacity" class="value">—</div><div class="unit">fish / month</div></div>
+          <div class="metric"><div class="label">Spawn Months</div><div id="fishSpawnMonths" class="value">—</div><div class="unit">months / year</div></div>
           <div class="metric"><div class="label">Fishing Spots</div><div id="fishSpotsMetric" class="value">—</div><div class="unit">needed / available</div></div>
         </div>
 
@@ -296,6 +297,7 @@ footer{text-align:center;color:#8f8066;font-size:13px;padding:20px 0 5px}
           <div>
             <label for="forageCap">Current node capacity</label>
 <input id="forageCap" type="number" min="1" max="400" step="1" value="65">
+            <div id="forageCapacityNote" class="note" style="display:none">Enter the node's current capacity as shown in-game. The planner does not apply Of the Vogtland's capacity bonus automatically.</div>
           </div>
         </div>
         <div style="margin-top:14px">
@@ -595,7 +597,7 @@ function renderFishing(){
   $('fishAnnual').textContent=best.yield;
   $('fishSpotRateNote').textContent=GAME.fishing.catchPerSpotPerMonth.toFixed(1);
 
-  $('fishMonthlyCapacity').textContent=Math.round(fullNodeMonthlyCapacity);
+  $('fishSpawnMonths').textContent=best.spawnDates.length;
 
   const deadlineRows=husbandry ? best.rows.slice(0,-1) : best.rows.slice(0,2);
   const maxMonthlyHarvestNeeded=Math.max(...deadlineRows.map(r=>r.caught));
@@ -789,6 +791,7 @@ function renderForaging(){
   const w=Number($('forageWoodland').value)/100;
   const origin=getOrigin();
   $('forageWoodlandValue').textContent=Math.round(w*100)+'%';
+  $('forageCapacityNote').style.display=origin==='vogtland'?'block':'none';
 
   // The player enters the CURRENT in-game capacity directly.
   // Do not modify it again for Origin effects.
