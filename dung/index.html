@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Manure Lords — Dung & Fertilizer Planner</title>
+  <style>
+    :root{
+      --bg:#071317;--panel:#0d1c20;--panel2:#102329;--line:#7c5a22;
+      --gold:#ddb55f;--ivory:#fff2d2;--muted:#c9b98e;--green:#9be64d;
+      --red:#e06b57;--blue:#7eb6c8;--ink:#17130c;--paper:#f3e0b1;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:radial-gradient(circle at 70% 0,#10282d 0,#071317 42%,#040b0e 100%);color:var(--ivory);font-family:Georgia,"Times New Roman",serif;min-height:100vh}
+    button,input{font:inherit}
+    .topbar{min-height:86px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:12px 26px;background:#081317e8}
+    .brand{display:flex;align-items:center;gap:13px}.crest{width:54px;height:54px;border:1px solid var(--gold);border-radius:50%;display:grid;place-items:center;font-size:30px;background:#0c1c20}
+    .brand-title{font-size:25px;letter-spacing:1px}.brand-sub{font-size:11px;letter-spacing:4px;color:var(--gold);margin-top:2px}
+    .home{color:var(--ivory);text-decoration:none;border:1px solid var(--line);border-radius:4px;padding:12px 20px;background:#0c191d}
+    .hero{text-align:center;padding:18px 16px 14px}.hero h1{margin:0;font-size:42px;letter-spacing:2px}.hero .sub{color:var(--gold);letter-spacing:3px;margin-top:4px}.hero .tag{font-style:italic;color:#ecd6a2;margin-top:7px}
+    main{display:grid;grid-template-columns:minmax(320px,390px) minmax(0,1fr);gap:12px;padding:0 24px 24px;max-width:1500px;margin:auto}
+    .panel{background:linear-gradient(150deg,#0d1c20,#0a171b);border:1px solid var(--line);border-radius:7px;padding:16px;box-shadow:0 12px 35px #0004}
+    .section+.section{border-top:1px solid var(--line);margin-top:18px;padding-top:17px}
+    h2,h3{margin:0}.section h2,.results h2{font-size:21px;letter-spacing:.6px}.help{color:var(--muted);font-size:14px;font-style:italic;margin:5px 0 12px;line-height:1.35}
+    .source-list{display:grid;gap:7px}.source-row{display:grid;grid-template-columns:38px 1fr 92px;align-items:center;gap:8px;min-height:51px;border:1px solid #57421f;border-radius:4px;padding:6px 8px;background:#0a171b}
+    .source-row.locked{opacity:.72}.animal{font-size:25px;text-align:center}.source-name{font-size:18px}.source-rate{display:block;color:var(--muted);font-size:12px;margin-top:2px}.locked-note{color:#f0a776}
+    input[type=number]{width:100%;background:#0c171b;color:var(--ivory);border:1px solid var(--line);border-radius:4px;padding:8px 9px;font-size:17px}
+    .check{display:grid;grid-template-columns:22px 1fr;gap:9px;margin:12px 0;align-items:start}.check input{width:18px;height:18px;accent-color:#80b942}.check strong{display:block}.check span{display:block;color:var(--muted);font-size:13px;margin-top:3px;line-height:1.3}
+    .target-wrap{display:grid;grid-template-columns:1fr 90px;gap:9px;align-items:center}.target-unit{color:var(--muted)}
+    .results{min-width:0}.metric-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0 10px}.metric{border:1px solid var(--line);border-radius:5px;background:#102126;padding:14px;text-align:center;min-height:116px}.metric-icon{font-size:24px}.metric-label{color:#ead9ad;text-transform:uppercase;letter-spacing:.7px;font-size:14px}.metric-value{display:block;color:var(--green);font-size:38px;font-weight:bold;margin-top:5px}.metric-unit{font-size:15px;color:var(--ivory);font-weight:normal}
+    .formula{display:flex;align-items:center;justify-content:center;gap:20px;border:1px solid var(--line);border-radius:5px;background:#09161a;padding:12px;margin-bottom:11px;font-size:18px}.arrow{color:var(--gold)}.formula-note{text-align:center;color:var(--muted);font-style:italic;font-size:13px;margin-top:-5px;margin-bottom:12px}
+    .breakdown{border:1px solid var(--line);border-radius:5px;overflow:hidden}.breakdown h3{padding:10px 12px;background:#0e2024;font-size:18px}.table-wrap{overflow-x:auto}table{border-collapse:collapse;width:100%}th,td{padding:9px 11px;border-top:1px solid #4f411f;text-align:left}th{color:#ead9ad;font-size:13px;text-transform:uppercase;letter-spacing:.5px}td:last-child{text-align:right;color:var(--green);font-weight:bold}.zero{color:#8f968d!important}.badge{font-size:11px;border:1px solid #98653a;color:#f1b57c;border-radius:10px;padding:2px 6px;margin-left:6px}
+    .comparison{margin-top:11px;border:1px solid var(--line);border-left:4px solid var(--blue);border-radius:4px;padding:13px;background:#0c1d21}.comparison.good{border-left-color:var(--green)}.comparison.bad{border-left-color:var(--red)}.comparison-title{font-size:17px}.comparison-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:9px}.comparison-cell{background:#09161a;padding:10px;border:1px solid #44391f;text-align:center}.comparison-cell span{display:block;color:var(--muted);font-size:12px;text-transform:uppercase}.comparison-cell strong{display:block;color:var(--green);font-size:21px;margin-top:3px}.comparison.bad .comparison-cell strong{color:#f09c7d}
+    details{margin-top:10px;border:1px solid #5b4924;border-radius:4px;background:#09161a}summary{cursor:pointer;padding:11px 13px;color:var(--gold)}.suggestions{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:0 11px 11px}.suggestion{border:1px solid #4f411f;padding:9px;text-align:center}.suggestion b{display:block;color:var(--green);font-size:23px}.suggestion small{color:var(--muted)}
+    .assumption{color:var(--muted);font-size:13px;font-style:italic;line-height:1.4;margin-top:13px;border-top:1px solid #59471e;padding-top:10px}
+    .advisor{position:fixed;right:18px;bottom:18px;z-index:5;display:flex;align-items:flex-end;gap:8px;max-width:min(590px,calc(100vw - 30px))}.advisor.hidden{display:none}.bubble{position:relative;background:var(--paper);color:var(--ink);border:2px solid #9e7938;border-radius:16px;padding:15px 42px 15px 18px;box-shadow:0 8px 30px #0008;min-width:280px}.bubble:after{content:"";position:absolute;right:-18px;bottom:20px;border-width:12px 0 12px 19px;border-style:solid;border-color:transparent transparent transparent var(--paper)}.bubble-close{position:absolute;right:10px;top:7px;background:transparent;border:0;color:#5c4622;font-size:20px;cursor:pointer}.bubble-text{font-size:17px;line-height:1.3}.bubble-actions{display:flex;justify-content:flex-end;margin-top:8px}.mute{background:none;border:0;border-bottom:1px dotted #6f572c;color:#6f572c;cursor:pointer;padding:2px}.dungley{text-align:center;min-width:128px}.dungley-emoji{font-size:66px;filter:drop-shadow(0 5px 4px #0008)}.dungley-name{font-size:9px;color:var(--gold);letter-spacing:.8px;white-space:nowrap}.summon{position:fixed;right:18px;bottom:18px;border:1px solid var(--line);background:#102126;color:var(--ivory);border-radius:22px;padding:9px 13px;cursor:pointer;display:none}.summon.show{display:block}
+    footer{text-align:center;color:#8f866b;font-size:12px;padding:0 20px 24px}
+    .advisor[data-position="bottom-left"]{right:auto;left:18px;bottom:18px;top:auto}
+    .advisor[data-position="top-right"]{right:18px;left:auto;top:18px;bottom:auto}
+    .advisor[data-position="top-left"]{right:auto;left:18px;top:18px;bottom:auto}
+    .advisor[data-position="bottom-right"]{right:18px;left:auto;bottom:18px;top:auto}
+    .bubble-close,.mute{min-height:36px;min-width:36px;touch-action:manipulation}
+    .summon{z-index:6;min-height:44px;touch-action:manipulation}
+    @media(max-width:600px){
+      .advisor,.advisor[data-position]{top:auto;bottom:12px;left:8px;right:8px;max-width:calc(100vw - 16px);gap:4px;align-items:flex-end}
+      .advisor[data-position="bottom-left"]{flex-direction:row-reverse}
+      .advisor[data-position="bottom-right"]{flex-direction:row}
+      .bubble{min-width:0;flex:1;padding:12px 32px 12px 12px}
+      .bubble-text{font-size:14px}
+      .dungley{min-width:65px;max-width:70px}
+      .dungley-emoji{font-size:40px}
+      .dungley-name{font-size:7px;letter-spacing:0}
+      .mute{font-size:13px;padding:5px}
+      .bubble:after{display:none}
+    }
+    @media(max-width:950px){main{grid-template-columns:1fr}.metric-grid{grid-template-columns:1fr}.suggestions{grid-template-columns:repeat(2,1fr)}.advisor{right:10px;bottom:10px}.bubble{min-width:0}.comparison-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><div class="crest">💩</div><div><div class="brand-title">MANURE LORDS</div><div class="brand-sub">COMMUNITY TOOLS</div></div></div>
+    <a class="home" href="../index.html">⌂ &nbsp; HOME</a>
+  </header>
+  <section class="hero">
+    <h1>DUNG &amp; FERTILIZER PLANNER</h1>
+    <div class="sub">THE ROYAL MANURE FORECAST</div>
+    <div class="tag">Plan your realm’s most essential resource.</div>
+  </section>
+
+  <main>
+    <aside class="panel controls">
+      <section class="section">
+        <h2>YOUR DUNG SOURCES</h2>
+        <p class="help">Enter the adult animals and backyard pens you have—or plan to have.</p>
+        <div class="source-list">
+          <label class="source-row"><span class="animal">🐄</span><span class="source-name">Cows<span class="source-rate">1 Dung every 60 days</span></span><input id="cows" type="number" min="0" step="1" value="0" aria-label="Number of cows"></label>
+          <label class="source-row"><span class="animal">🐑</span><span class="source-name">Sheep<span class="source-rate">1 Dung every 160 days</span></span><input id="sheep" type="number" min="0" step="1" value="0" aria-label="Number of sheep"></label>
+          <label class="source-row pen-row"><span class="animal">🐖</span><span class="source-name">Pig Pens<span class="source-rate">1 Dung every 90 days</span><span class="source-rate locked-note pen-lock">Requires Practical Tillage</span></span><input id="pigs" type="number" min="0" step="1" value="0" aria-label="Number of pig pens"></label>
+          <label class="source-row pen-row"><span class="animal">🐐</span><span class="source-name">Goat Pens<span class="source-rate">1 Dung every 120 days</span><span class="source-rate locked-note pen-lock">Requires Practical Tillage</span></span><input id="goats" type="number" min="0" step="1" value="0" aria-label="Number of goat pens"></label>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>DEVELOPMENT &amp; UPGRADE</h2>
+        <label class="check"><input id="practical" type="checkbox"><span><strong>Practical Tillage</strong><span>Unlocks Dung collection from Pig and Goat Pens.</span></span></label>
+        <label class="check"><input id="pit" type="checkbox"><span><strong>Stone-Lined Pit</strong><span>Every fifth Fertilizer craft doubles output; shown as a +20% long-term average.</span></span></label>
+      </section>
+
+      <section class="section">
+        <h2>OPTIONAL FIELD TARGET</h2>
+        <p class="help">Enter the combined size of fields receiving Fertilizer this summer—not your settlement’s total farmland.</p>
+        <div class="target-wrap"><input id="target" type="number" min="0" step="0.1" placeholder="e.g. 1.0" aria-label="Fallow area to fertilize this year"><span class="target-unit">morgens</span></div>
+      </section>
+    </aside>
+
+    <section class="panel results">
+      <h2>REALM MANURE FORECAST</h2>
+      <div class="metric-grid">
+        <div class="metric"><div class="metric-icon">💩</div><div class="metric-label">Dung / Year</div><span id="dungTotal" class="metric-value">0.0</span></div>
+        <div class="metric"><div class="metric-icon">🌱</div><div class="metric-label">Fertilizer / Year</div><span id="fertTotal" class="metric-value">0.0</span></div>
+        <div class="metric"><div class="metric-icon">🌾</div><div class="metric-label">Fallow Area Supported</div><span id="coverage" class="metric-value">0.00 <span class="metric-unit">morgens</span></span></div>
+      </div>
+
+      <div class="formula"><span>💩 5 Dung</span><span class="arrow">→</span><span>🌱 1 Fertilizer</span><span class="arrow">→</span><span>0.1 morgen</span></div>
+      <div id="formulaNote" class="formula-note">Stone-Lined Pit not included.</div>
+
+      <div class="breakdown">
+        <h3>ANNUAL SOURCE BREAKDOWN</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Source</th><th>Count</th><th>Dung interval</th><th>Dung / year</th></tr></thead>
+          <tbody>
+            <tr><td>🐄 Cows</td><td id="cowCount">0</td><td>60 days</td><td id="cowDung">0.0</td></tr>
+            <tr><td>🐑 Sheep</td><td id="sheepCount">0</td><td>160 days</td><td id="sheepDung">0.0</td></tr>
+            <tr><td>🐖 Pig Pens <span class="badge pen-badge">LOCKED</span></td><td id="pigCount">0</td><td>90 days</td><td id="pigDung" class="zero">0.0</td></tr>
+            <tr><td>🐐 Goat Pens <span class="badge pen-badge">LOCKED</span></td><td id="goatCount">0</td><td>120 days</td><td id="goatDung" class="zero">0.0</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+
+      <div id="comparison" class="comparison" hidden>
+        <div id="comparisonTitle" class="comparison-title"></div>
+        <div class="comparison-grid">
+          <div class="comparison-cell"><span>Target</span><strong id="targetFert">0.0</strong></div>
+          <div class="comparison-cell"><span id="differenceLabel">Difference</span><strong id="difference">0.0</strong></div>
+          <div class="comparison-cell"><span>Area difference</span><strong id="areaDifference">0.00</strong></div>
+        </div>
+        <details id="suggestionWrap"><summary>Show possible ways to close the gap</summary><div id="suggestions" class="suggestions"></div></details>
+      </div>
+
+      <p class="assumption"><strong>Fertilizer duration:</strong> Once applied, Fertilizer remains effective for just over 2 years, allowing two annual crops before another application is needed.</p>
+      <p class="assumption"><strong>Planning assumptions:</strong> Potential long-term production with sufficient Dunghill labor. Calves and lambs are excluded because their population changes with breeding, maturation, and butchering; any Dung they produce is a bonus.</p>
+    </section>
+  </main>
+
+  <div id="advisor" class="advisor" role="status" aria-live="polite">
+    <div class="bubble"><button id="closeAdvisor" class="bubble-close" aria-label="Close Dungley’s message">×</button><div id="advisorText" class="bubble-text"></div><div class="bubble-actions"><button id="muteAdvisor" class="mute">Silence Dungley</button></div></div>
+    <div class="dungley"><div class="dungley-emoji">💩</div><div class="dungley-name">DUNGLEY<br>ROYAL MANURE ADVISER</div></div>
+  </div>
+  <button id="summonAdvisor" class="summon">💩 Summon Dungley</button>
+
+  <footer>Manure Lords Community Tools · Game version 0.8.117<br><br><small>Unofficial fan-made tool for Manor Lords.<br>Not affiliated with or endorsed by Slavic Magic or Hooded Horse.<br>All calculations are based on publicly available game mechanics and community research.</small></footer>
+  <script>
+const DAYS_PER_YEAR = 365;
+const SOURCES = {
+  cows:  { label: 'Cows',      interval: 60,  emoji: '🐄' },
+  sheep: { label: 'Sheep',     interval: 160, emoji: '🐑' },
+  pigs:  { label: 'Pig Pens',  interval: 90,  emoji: '🐖', requiresPractical: true },
+  goats: { label: 'Goat Pens', interval: 120, emoji: '🐐', requiresPractical: true }
+};
+
+const ids = ['cows','sheep','pigs','goats'];
+const inputs = Object.fromEntries(ids.map(id => [id, document.getElementById(id)]));
+const practical = document.getElementById('practical');
+const pit = document.getElementById('pit');
+const target = document.getElementById('target');
+const advisor = document.getElementById('advisor');
+const advisorText = document.getElementById('advisorText');
+const summonAdvisor = document.getElementById('summonAdvisor');
+let advisorMuted = false;
+let advisorTimer;
+let advisorHideTimer;
+let advisorPleaTimer;
+let hasPleaded = false;
+let lastPosition = -1;
+const ADVISOR_VISIBLE_MS = 8500;
+const advisorPositions = ['bottom-right','bottom-left','top-right','top-left'];
+const ADVISOR_IDLE_MS = 2200;
+let lastInteractionAt = Date.now();
+let pointerActive = false;
+let hasPendingPlea = false;
+function hideAdvisor(){
+  clearTimeout(advisorHideTimer);
+  advisor.classList.add('hidden');
+  // Dungley stays away until a planner value changes.
+}
+function isEditing(){
+  const active = document.activeElement;
+  return pointerActive; // Focus can remain on a field long after the user stops editing.
+}
+function rectsOverlap(a,b,pad=12){
+  return a.left < b.right+pad && a.right > b.left-pad && a.top < b.bottom+pad && a.bottom > b.top-pad;
+}
+function positionAdvisor(){
+  const available = window.innerWidth <= 600 ? ['bottom-right','bottom-left'] : advisorPositions;
+  const controls = [...document.querySelectorAll('main input,main button,main select,main textarea,main a,main summary')]
+    .filter(el => { const r=el.getBoundingClientRect(); return r.width && r.height && r.bottom > 0 && r.top < innerHeight; })
+    .map(el => el.getBoundingClientRect());
+  const choices = [];
+  for(let i=0;i<available.length;i++){
+    advisor.dataset.position = available[i];
+    const r=advisor.getBoundingClientRect();
+    if(r.left < 0 || r.right > innerWidth || r.top < 0 || r.bottom > innerHeight) continue;
+    if(!controls.some(c => rectsOverlap(r,c,16))) choices.push(i);
+  }
+  if(!choices.length) return false;
+  const different = choices.filter(i => i !== lastPosition);
+  const pool = different.length ? different : choices;
+  const selected = pool[Math.floor(Math.random()*pool.length)];
+  lastPosition = selected;
+  advisor.dataset.position = available[selected];
+  return true;
+}
+function showAdvisor(message, duration = ADVISOR_VISIBLE_MS){
+  clearTimeout(advisorHideTimer);
+  advisorText.textContent = message;
+  advisor.classList.remove('hidden');
+  if(!positionAdvisor()) { hideAdvisor(); return false; }
+  summonAdvisor.classList.remove('show');
+  advisorHideTimer = setTimeout(hideAdvisor, duration);
+  return true;
+}
+function markInteraction(){
+  lastInteractionAt = Date.now();
+  clearTimeout(advisorTimer);
+  if(!advisor.classList.contains('hidden') && !advisor.contains(document.activeElement)) hideAdvisor();
+}
+document.querySelectorAll('main input,main select,main textarea,main button').forEach(el => {
+  el.addEventListener('focus', markInteraction);
+  el.addEventListener('pointerdown', markInteraction);
+});
+document.addEventListener('pointerdown', e => { if(e.target.closest('main')) { pointerActive=true; markInteraction(); } });
+document.addEventListener('pointerup', () => { pointerActive=false; });
+document.addEventListener('pointercancel', () => { pointerActive=false; });
+window.addEventListener('scroll', () => { if(!advisor.classList.contains('hidden')) hideAdvisor(); }, {passive:true});
+window.addEventListener('resize', () => { if(!advisor.classList.contains('hidden') && !positionAdvisor()) hideAdvisor(); });
+
+let lastAction = 'initial';
+let lastPlannerSnapshot = null;
+
+function numberValue(el){
+  const value = Number(el.value);
+  return Number.isFinite(value) && value > 0 ? value : 0;
+}
+function fmt(value, decimals=1){
+  return value.toFixed(decimals).replace(/\.0$/, '.0');
+}
+function sourceDung(id, count, practicalEnabled){
+  const source = SOURCES[id];
+  if(source.requiresPractical && !practicalEnabled) return 0;
+  return count * DAYS_PER_YEAR / source.interval;
+}
+function getState(){
+  const counts = Object.fromEntries(ids.map(id => [id, numberValue(inputs[id])]));
+  const practicalEnabled = practical.checked;
+  const pitEnabled = pit.checked;
+  const contributions = Object.fromEntries(ids.map(id => [id, sourceDung(id, counts[id], practicalEnabled)]));
+  const dung = Object.values(contributions).reduce((sum, value) => sum + value, 0);
+  const fertilizer = dung / 5 * (pitEnabled ? 1.2 : 1);
+  const targetArea = numberValue(target);
+  const targetFertilizer = targetArea * 10;
+  return { counts, practicalEnabled, pitEnabled, contributions, dung, fertilizer, coverage:fertilizer/10, targetArea, targetFertilizer };
+}
+
+function render(){
+  const s = getState();
+  document.getElementById('dungTotal').textContent = fmt(s.dung);
+  document.getElementById('fertTotal').textContent = fmt(s.fertilizer);
+  document.getElementById('coverage').innerHTML = `${s.coverage.toFixed(2)} <span class="metric-unit">morgens</span>`;
+  document.getElementById('formulaNote').textContent = s.pitEnabled
+    ? 'Stone-Lined Pit included: +20% long-term average Fertilizer output.'
+    : 'Stone-Lined Pit not included.';
+
+  ids.forEach(id => {
+    document.getElementById(id === 'pigs' ? 'pigCount' : id === 'goats' ? 'goatCount' : `${id.replace(/s$/,'')}Count`).textContent = s.counts[id];
+    const dungEl = document.getElementById(id === 'pigs' ? 'pigDung' : id === 'goats' ? 'goatDung' : `${id.replace(/s$/,'')}Dung`);
+    dungEl.textContent = fmt(s.contributions[id]);
+    dungEl.classList.toggle('zero', s.contributions[id] === 0);
+  });
+
+  document.querySelectorAll('.pen-row').forEach(row => row.classList.toggle('locked', !s.practicalEnabled));
+  document.querySelectorAll('.pen-lock').forEach(note => note.hidden = s.practicalEnabled);
+  document.querySelectorAll('.pen-badge').forEach(badge => {
+    badge.hidden = s.practicalEnabled;
+    badge.textContent = 'LOCKED';
+  });
+
+  const comparison = document.getElementById('comparison');
+  if(s.targetArea > 0){
+    comparison.hidden = false;
+    const difference = s.fertilizer - s.targetFertilizer;
+    const met = difference >= -0.0001;
+    comparison.classList.toggle('good', met);
+    comparison.classList.toggle('bad', !met);
+    document.getElementById('comparisonTitle').textContent = met
+      ? `Target met for ${s.targetArea.toFixed(2)} morgens of fallow fields.`
+      : `More Fertilizer is needed for ${s.targetArea.toFixed(2)} morgens of fallow fields.`;
+    document.getElementById('targetFert').textContent = `${fmt(s.targetFertilizer)} Fertilizer`;
+    document.getElementById('differenceLabel').textContent = met ? 'Surplus' : 'Shortfall';
+    document.getElementById('difference').textContent = `${fmt(Math.abs(difference))} Fertilizer`;
+    document.getElementById('areaDifference').textContent = `${Math.abs(difference/10).toFixed(2)} morgens`;
+    const wrap = document.getElementById('suggestionWrap');
+    wrap.hidden = met;
+    if(!met) renderSuggestions(s, Math.abs(difference));
+  }else{
+    comparison.hidden = true;
+  }
+  // Rendering alone never summons Dungley. Only an actual value change does.
+  const snapshot = JSON.stringify({counts:s.counts, practical:s.practicalEnabled, pit:s.pitEnabled, target:s.targetArea});
+  if(lastPlannerSnapshot !== null && snapshot !== lastPlannerSnapshot && lastAction !== 'summoned') scheduleAdvisor(s);
+  lastPlannerSnapshot = snapshot;
+}
+
+function renderSuggestions(s, fertilizerGap){
+  const dungGap = fertilizerGap * 5 / (s.pitEnabled ? 1.2 : 1);
+  const suggestions = ids.map(id => {
+    const source = SOURCES[id];
+    const locked = source.requiresPractical && !s.practicalEnabled;
+    const count = Math.ceil(dungGap / (DAYS_PER_YEAR/source.interval));
+    return `<div class="suggestion"><span>${source.emoji} ${source.label}</span>${locked ? '<b>LOCKED</b><small>Requires Practical Tillage</small>' : `<b>${count}</b><small>additional</small>`}</div>`;
+  });
+  document.getElementById('suggestions').innerHTML = suggestions.join('');
+}
+
+const messagePools = {
+  initial:[
+    'Greetings, my lord. I shall advise you on matters of the realm’s… output.',
+    'It appears you are planning a manure operation. Splendid choice.'
+  ],
+  empty:[
+    'My lord, even I cannot produce something from nothing.',
+    'The ledger is empty. The fields remain distressingly clean.'
+  ],
+  lockedPens:[
+    'No perk, no poop. Those are the rules.',
+    'The backyard deposits remain tragically uncollected.'
+  ],
+  practical:[
+    'Excellent! The backyard deposits are now officially recoverable.',
+    'Practical Tillage: because someone finally thought to bring a shovel.'
+  ],
+  pit:[
+    'At last—a facility worthy of my talents.',
+    'Twenty percent more Fertilizer from the same pile. Efficiently disgusting.'
+  ],
+  noTarget:[
+    'A respectable output, my lord. Give me a field target and I shall judge it.',
+    'The pile grows. Its purpose remains a mystery.'
+  ],
+  targetNoSources:[
+    'Your fields are ambitious. Your dung heap does not yet exist.',
+    'A fine target. Now we require the less glamorous half of the plan.'
+  ],
+  largeGap:[
+    'Your fields are vast. Your dung heap is not.',
+    'The soil hungers, my lord. The pile disappoints.'
+  ],
+  smallGap:[
+    'Painfully close, my lord. A few more deposits should do it.',
+    'Nearly there. I recommend patience—and perhaps another cow.'
+  ],
+  exact:[
+    'Perfectly calculated. Not a shovelful wasted.',
+    'A perfectly balanced pile. Magnificent.'
+  ],
+  surplus:[
+    'The kingdom is awash in prosperity. Mind your step.',
+    'An abundant harvest, my lord. And the crops look promising too.'
+  ],
+  huge:[
+    'My lord, this has gone well beyond planning and become a lifestyle.',
+    'That is an alarming amount of manure. I approve.'
+  ]
+};
+let messageCounter = 0;
+function choose(pool){
+  const messages = messagePools[pool];
+  return messages[(messageCounter++) % messages.length];
+}
+function advisorPool(s){
+  if(lastAction === 'practicalOn') return 'practical';
+  if(lastAction === 'pitOn') return 'pit';
+  if((s.counts.pigs > 0 || s.counts.goats > 0) && !s.practicalEnabled) return 'lockedPens';
+  const totalCount = Object.values(s.counts).reduce((a,b)=>a+b,0);
+  if(totalCount === 0 && s.targetArea > 0) return 'targetNoSources';
+  if(totalCount === 0) return lastAction === 'initial' ? 'initial' : 'empty';
+  if(s.coverage >= 10) return 'huge';
+  if(s.targetArea === 0) return 'noTarget';
+  const difference = s.fertilizer - s.targetFertilizer;
+  if(Math.abs(difference) <= .05) return 'exact';
+  if(difference >= 0) return 'surplus';
+  if(Math.abs(difference) <= s.targetFertilizer * .25) return 'smallGap';
+  return 'largeGap';
+}
+function scheduleAdvisor(s){
+  clearTimeout(advisorTimer);
+  if(advisorMuted) return;
+  // First visit gets an introduction. Later changes only sometimes prompt advice.
+  const isInitial = false;
+  if(!isInitial && Math.random() >= 0.65) return;
+  const message = choose(advisorPool(s));
+  function attempt(){
+    if(advisorMuted) return;
+    const remaining = ADVISOR_IDLE_MS - (Date.now() - lastInteractionAt);
+    if(isEditing() || remaining > 0){
+      advisorTimer = setTimeout(attempt, Math.max(700, remaining));
+      return;
+    }
+    showAdvisor(message);
+    lastAction = 'state';
+  }
+  advisorTimer = setTimeout(attempt, ADVISOR_IDLE_MS);
+}
+
+ids.forEach(id => inputs[id].addEventListener('input', () => { markInteraction(); lastAction = id; render(); }));
+target.addEventListener('input', () => { markInteraction(); lastAction = 'target'; render(); });
+practical.addEventListener('change', () => { markInteraction(); lastAction = practical.checked ? 'practicalOn' : 'practicalOff'; render(); });
+pit.addEventListener('change', () => { markInteraction(); lastAction = pit.checked ? 'pitOn' : 'pitOff'; render(); });
+document.getElementById('closeAdvisor').addEventListener('click', hideAdvisor);
+document.getElementById('muteAdvisor').addEventListener('click', () => {
+  clearTimeout(advisorTimer);
+  clearTimeout(advisorPleaTimer);
+  if(!hasPleaded){
+    hasPleaded = true;
+    hasPendingPlea = true;
+    showAdvisor('Silence me, my lord? But who shall speak for the dung? Grant me one more chance! I promise to appear only when I have something terribly important to say.', 10500);
+    const muteButton = document.getElementById('muteAdvisor');
+    muteButton.textContent = 'Silence him anyway';
+    advisorPleaTimer = setTimeout(() => { hasPendingPlea = false; if(!advisorMuted) hideAdvisor(); }, 10500);
+    return;
+  }
+  hasPendingPlea = false;
+  advisorMuted = true;
+  hideAdvisor();
+  summonAdvisor.classList.add('show');
+});
+summonAdvisor.addEventListener('click', () => {
+  advisorMuted = false;
+  hasPendingPlea = false;
+  lastAction = 'summoned';
+  document.getElementById('muteAdvisor').textContent = 'Silence Dungley';
+  render();
+});
+
+render();
+// One welcome on initial load; subsequent appearances require actual input changes.
+// Allow layout to settle before checking for a position that avoids controls.
+requestAnimationFrame(() => {
+  if (!advisorMuted) showAdvisor(choose(messagePools.initial ? 'initial' : advisorPool(getState())));
+});
+
+</script>
+</body>
+</html>
